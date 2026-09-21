@@ -28,8 +28,10 @@ public sealed class PollardRhoAlgorithm : AlgorithmBase<BigInteger, BigInteger>
 
     public override BigInteger GenerateTypedInput(int n, ExperimentConfig config)
     {
-        int pBits = Math.Max(4, n / 2);
-        int qBits = Math.Max(4, n - pBits);
+        // Ограничение битовой длины для предотвращения зависания при общих настройках с большими N
+        int effectiveN = Math.Min(n, 48);
+        int pBits = Math.Max(4, effectiveN / 2);
+        int qBits = Math.Max(4, effectiveN - pBits);
 
         BigInteger p = GeneratePrime(pBits);
         BigInteger q = GeneratePrime(qBits);
@@ -116,9 +118,11 @@ public sealed class PollardRhoAlgorithm : AlgorithmBase<BigInteger, BigInteger>
 
     private static BigInteger FallbackFactor(BigInteger n)
     {
+        int trials = 0;
         for (BigInteger d = 3; d * d <= n; d += 2)
         {
             if (n % d == 0) return d;
+            if (++trials > 100000) break;
         }
         return n;
     }

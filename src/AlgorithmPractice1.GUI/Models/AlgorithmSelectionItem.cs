@@ -50,6 +50,22 @@ public partial class AlgorithmSelectionItem : ObservableObject
     public bool HasK => Algorithm.Id == "MillerRabin";
     public bool HasX => Algorithm.Category == AlgorithmCategory.Exponentiation || Algorithm.Id.Contains("Polynomial");
 
+    partial void OnNMaxChanged(int value)
+    {
+        if (HasM)
+        {
+            M = value;
+        }
+    }
+
+    partial void OnNStepChanged(int value)
+    {
+        if (HasM)
+        {
+            MStep = value;
+        }
+    }
+
     public AlgorithmSelectionItem(IAlgorithm algorithm)
     {
         Algorithm = algorithm;
@@ -62,8 +78,8 @@ public partial class AlgorithmSelectionItem : ObservableObject
         NMax = def.NMax;
         NStep = def.NStep;
         RunsPerN = def.RunsPerN;
-        M = def.M;
-        MStep = def.MStep;
+        M = HasM ? def.NMax : def.M;
+        MStep = HasM ? def.NStep : def.MStep;
         K = def.K;
         X = def.X;
         ForceRecalculate = false;
@@ -71,13 +87,15 @@ public partial class AlgorithmSelectionItem : ObservableObject
 
     public ExperimentConfig ToConfig()
     {
+        int effectiveNMax = NMax > 0 ? NMax : 100;
+        int effectiveNStep = NStep > 0 ? NStep : 10;
         return new ExperimentConfig
         {
-            NMax = NMax > 0 ? NMax : 100,
-            NStep = NStep > 0 ? NStep : 10,
+            NMax = effectiveNMax,
+            NStep = effectiveNStep,
             RunsPerN = RunsPerN > 0 ? RunsPerN : 1,
-            M = HasM ? M : null,
-            MStep = HasM ? MStep : null,
+            M = HasM ? effectiveNMax : null,
+            MStep = HasM ? effectiveNStep : null,
             K = HasK ? K : null,
             X = HasX ? X : null,
             ForceRecalculate = ForceRecalculate

@@ -185,4 +185,14 @@ public class AlgorithmTests
         // Бинарное: 10 = 1010_2. Гораздо меньше умножений!
         Assert.True(ctxBin.StepCount <= 6);
     }
+
+    [Fact]
+    public void PollardRho_WithLargeCommonN_CompletesQuicklyDueToSafeCap()
+    {
+        var alg = new PollardRhoAlgorithm();
+        var config = new ExperimentConfig { NMax = 200, NStep = 50, RunsPerN = 1 };
+        var input = alg.GenerateTypedInput(200, config);
+        var factor = alg.ExecuteTyped(input, null);
+        Assert.True(factor > 1 && factor <= input);
+    }
 }

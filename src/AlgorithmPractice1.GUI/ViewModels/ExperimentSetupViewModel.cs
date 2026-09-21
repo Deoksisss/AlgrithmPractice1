@@ -22,6 +22,40 @@ public partial class ExperimentSetupViewModel : ViewModelBase
     [ObservableProperty]
     private string _errorMessage = string.Empty;
 
+    // Режим настроек: общие для всех vs индивидуальные
+    [ObservableProperty]
+    private bool _useCommonSettings = true;
+
+    public bool IsIndividualSettings
+    {
+        get => !UseCommonSettings;
+        set => UseCommonSettings = !value;
+    }
+
+    partial void OnUseCommonSettingsChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsIndividualSettings));
+    }
+
+    // Общие параметры для всех алгоритмов
+    [ObservableProperty]
+    private int _commonNMax = 150;
+
+    [ObservableProperty]
+    private int _commonNStep = 25;
+
+    [ObservableProperty]
+    private int _commonRunsPerN = 3;
+
+    [ObservableProperty]
+    private int _commonK = 20;
+
+    [ObservableProperty]
+    private double _commonX = 1.5;
+
+    [ObservableProperty]
+    private bool _commonForceRecalculate = false;
+
     public event Action<IReadOnlyList<ExperimentRequest>, string?>? StartExperimentRequested;
 
     public ExperimentSetupViewModel()
@@ -74,6 +108,45 @@ public partial class ExperimentSetupViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void ApplyCommonToAll()
+    {
+        foreach (var item in Algorithms)
+        {
+            item.NMax = CommonNMax;
+            item.NStep = CommonNStep;
+            item.RunsPerN = CommonRunsPerN;
+            item.ForceRecalculate = CommonForceRecalculate;
+
+            if (item.HasM)
+            {
+                item.M = CommonNMax;
+                item.MStep = CommonNStep;
+            }
+
+            if (item.HasK)
+            {
+                item.K = CommonK;
+            }
+
+            if (item.HasX)
+            {
+                item.X = CommonX;
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void ResetCommonDefaults()
+    {
+        CommonNMax = 150;
+        CommonNStep = 25;
+        CommonRunsPerN = 3;
+        CommonK = 20;
+        CommonX = 1.5;
+        CommonForceRecalculate = false;
+    }
+
+    [RelayCommand]
     private void RunExperiment()
     {
         ErrorMessage = string.Empty;
@@ -85,9 +158,35 @@ public partial class ExperimentSetupViewModel : ViewModelBase
             return;
         }
 
-        var requests = selected.Select(s => new ExperimentRequest(s.Algorithm, s.ToConfig())).ToList();
-        string? label = string.IsNullOrWhiteSpace(SessionLabel) ? null : SessionLabel.Trim();
+        List<ExperimentRequest> requests;
+        if (UseCommonSettings)
+        {
+            int nMax = Math.Max(1, CommonNMax);
+            int nStep = Math.Max(1, CommonNStep);
+            int runs = Math.Max(1, CommonRunsPerN);
 
+            requests = selected.Select(s =>
+            {
+                var config = new ExperimentConfig
+                {
+                    NMax = nMax,
+                    NStep = nStep,
+                    RunsPerN = runs,
+                    M = s.HasM ? nMax : null,
+                    MStep = s.HasM ? nStep : null,
+                    K = s.HasK ? CommonK : null,
+                    X = s.HasX ? CommonX : null,
+                    ForceRecalculate = CommonForceRecalculate
+                };
+                return new ExperimentRequest(s.Algorithm, config);
+            }).ToList();
+        }
+        else
+        {
+            requests = selected.Select(s => new ExperimentRequest(s.Algorithm, s.ToConfig())).ToList();
+        }
+
+        string? label = string.IsNullOrWhiteSpace(SessionLabel) ? null : SessionLabel.Trim();
         StartExperimentRequested?.Invoke(requests, label);
     }
 }

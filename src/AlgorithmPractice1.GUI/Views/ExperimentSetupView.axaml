@@ -74,10 +74,36 @@
             </Grid>
         </Border>
 
-        <!-- Правая колонка: параметры выбранного алгоритма и запуск -->
-        <Grid Grid.Column="1" RowDefinitions="*, Auto">
-            <!-- Панель параметров -->
+        <!-- Правая колонка: параметры алгоритмов и запуск -->
+        <Grid Grid.Column="1" RowDefinitions="Auto, *, Auto">
+            <!-- Переключатель режима: Общие настройки / Индивидуальные -->
             <Border Grid.Row="0"
+                    Background="White"
+                    BorderBrush="#D0D7DE"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="6"
+                    Margin="0,0,0,10">
+                <Grid ColumnDefinitions="*, *">
+                    <RadioButton Grid.Column="0"
+                                 Content="🌐 Общие настройки для всех алгоритмов"
+                                 IsChecked="{Binding UseCommonSettings}"
+                                 GroupName="SettingsMode"
+                                 FontWeight="SemiBold"
+                                 FontSize="13"
+                                 HorizontalAlignment="Center" />
+                    <RadioButton Grid.Column="1"
+                                 Content="🎯 Настройки выбранного алгоритма"
+                                 IsChecked="{Binding IsIndividualSettings}"
+                                 GroupName="SettingsMode"
+                                 FontWeight="SemiBold"
+                                 FontSize="13"
+                                 HorizontalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <!-- Основная панель параметров -->
+            <Border Grid.Row="1"
                     Background="White"
                     BorderBrush="#D0D7DE"
                     BorderThickness="1"
@@ -85,122 +111,233 @@
                     Padding="16"
                     Margin="0,0,0,12">
                 <ScrollViewer>
-                    <StackPanel Spacing="14" DataContext="{Binding SelectedItem}">
-                        <TextBlock Text="{Binding Algorithm.DisplayName}"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#1F2328" />
+                    <Grid>
+                        <!-- Панель 1: Общие настройки для всех алгоритмов -->
+                        <StackPanel Spacing="14" IsVisible="{Binding UseCommonSettings}">
+                            <TextBlock Text="🌐 Общие параметры эксперимента"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="#1F2328" />
 
-                        <TextBlock Text="{Binding Algorithm.Description}"
-                                   TextWrapping="Wrap"
-                                   FontSize="13"
-                                   Foreground="#57606A" />
+                            <TextBlock Text="Задайте параметры один раз — они автоматически применятся ко всем выбранным алгоритмам при запуске эксперимента. Для матричного умножения N и M будут иметь одинаковый диапазон и шаг."
+                                       TextWrapping="Wrap"
+                                       FontSize="13"
+                                       Foreground="#57606A" />
 
-                        <Separator Height="1" Background="#E1E4E8" Margin="0,4" />
+                            <Separator Height="1" Background="#E1E4E8" Margin="0,4" />
 
-                        <TextBlock Text="Параметры эксперимента"
-                                   FontSize="15"
-                                   FontWeight="SemiBold"
-                                   Foreground="#1F2328" />
+                            <TextBlock Text="Основные параметры (N, шаг, повторы)"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#1F2328" />
 
-                        <!-- NMax -->
-                        <Grid ColumnDefinitions="200, 160">
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Максимальный размер N:" FontWeight="Medium" />
-                                <TextBlock Text="Конечная граница сетки" FontSize="11" Foreground="#656D76" />
+                            <!-- CommonNMax -->
+                            <Grid ColumnDefinitions="220, 160">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Максимальный размер N:" FontWeight="Medium" />
+                                    <TextBlock Text="Верхняя граница диапазона" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding CommonNMax}"
+                                               Minimum="1"
+                                               Maximum="2000000"
+                                               FormatString="F0" />
+                            </Grid>
+
+                            <!-- CommonNStep -->
+                            <Grid ColumnDefinitions="220, 160">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Шаг по N:" FontWeight="Medium" />
+                                    <TextBlock Text="Интервал между точками" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding CommonNStep}"
+                                               Minimum="1"
+                                               Maximum="500000"
+                                               FormatString="F0" />
+                            </Grid>
+
+                            <!-- CommonRunsPerN -->
+                            <Grid ColumnDefinitions="220, 160">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Число повторов на N:" FontWeight="Medium" />
+                                    <TextBlock Text="Число независимых прогонов" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding CommonRunsPerN}"
+                                               Minimum="1"
+                                               Maximum="50"
+                                               FormatString="F0" />
+                            </Grid>
+
+                            <!-- Информационная плашка для матриц -->
+                            <Border Background="#F0F8FF" BorderBrush="#B6E3FF" BorderThickness="1" CornerRadius="6" Padding="12,10">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="ℹ️ Матричное умножение (A: n×m × B: m×n)"
+                                               FontWeight="SemiBold"
+                                               Foreground="#0969DA" />
+                                    <TextBlock Text="Размерности N и M имеют одинаковый максимум и шаг. Двумерная сетка строится по квадратному диапазону [Шаг .. N] × [Шаг .. N] для построения 3D поверхности."
+                                               TextWrapping="Wrap"
+                                               FontSize="12"
+                                               Foreground="#1F2328" />
+                                </StackPanel>
+                            </Border>
+
+                            <Separator Height="1" Background="#E1E4E8" Margin="0,4" />
+
+                            <TextBlock Text="Параметры специализированных алгоритмов"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#1F2328" />
+
+                            <!-- CommonK -->
+                            <Grid ColumnDefinitions="220, 160">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Число раундов K:" FontWeight="Medium" />
+                                    <TextBlock Text="Для теста Миллера–Рабина" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding CommonK}"
+                                               Minimum="1"
+                                               Maximum="200"
+                                               FormatString="F0" />
+                            </Grid>
+
+                            <!-- CommonX -->
+                            <Grid ColumnDefinitions="220, 160">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Основание / аргумент X:" FontWeight="Medium" />
+                                    <TextBlock Text="Для полинома и возведения в степень" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding CommonX}"
+                                               Increment="0.1"
+                                               FormatString="F4" />
+                            </Grid>
+
+                            <!-- CommonForceRecalculate -->
+                            <CheckBox IsChecked="{Binding CommonForceRecalculate}"
+                                      Content="Принудительный пересчёт (игнорировать кэш БД)"
+                                      Margin="0,4,0,0" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,8,0,0">
+                                <Button Content="📋 Применить ко всем алгоритмам в списке"
+                                        Command="{Binding ApplyCommonToAllCommand}"
+                                        Padding="12,6" />
+                                <Button Content="↺ Сбросить к рекомендованным"
+                                        Command="{Binding ResetCommonDefaultsCommand}"
+                                        Padding="12,6" />
                             </StackPanel>
-                            <NumericUpDown Grid.Column="1"
-                                           Value="{Binding NMax}"
-                                           Minimum="1"
-                                           Maximum="2000000"
-                                           FormatString="F0" />
-                        </Grid>
+                        </StackPanel>
 
-                        <!-- NStep -->
-                        <Grid ColumnDefinitions="200, 160">
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Шаг по N:" FontWeight="Medium" />
-                                <TextBlock Text="Интервал между точками" FontSize="11" Foreground="#656D76" />
-                            </StackPanel>
-                            <NumericUpDown Grid.Column="1"
-                                           Value="{Binding NStep}"
-                                           Minimum="1"
-                                           Maximum="500000"
-                                           FormatString="F0" />
-                        </Grid>
+                        <!-- Панель 2: Индивидуальные параметры выбранного алгоритма -->
+                        <StackPanel Spacing="14"
+                                    DataContext="{Binding SelectedItem}"
+                                    IsVisible="{Binding $parent[UserControl].((vm:ExperimentSetupViewModel)DataContext).IsIndividualSettings}">
+                            <TextBlock Text="{Binding Algorithm.DisplayName}"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="#1F2328" />
 
-                        <!-- RunsPerN -->
-                        <Grid ColumnDefinitions="200, 160">
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Число повторов на N:" FontWeight="Medium" />
-                                <TextBlock Text="Число независимых прогонов" FontSize="11" Foreground="#656D76" />
-                            </StackPanel>
-                            <NumericUpDown Grid.Column="1"
-                                           Value="{Binding RunsPerN}"
-                                           Minimum="1"
-                                           Maximum="50"
-                                           FormatString="F0" />
-                        </Grid>
+                            <TextBlock Text="{Binding Algorithm.Description}"
+                                       TextWrapping="Wrap"
+                                       FontSize="13"
+                                       Foreground="#57606A" />
 
-                        <!-- Дополнительные параметры сетки M (для матриц) -->
-                        <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasM}">
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Максимальный размер M:" FontWeight="Medium" />
-                                <TextBlock Text="Конечная граница сетки M" FontSize="11" Foreground="#656D76" />
-                            </StackPanel>
-                            <NumericUpDown Grid.Column="1"
-                                           Value="{Binding M}"
-                                           Minimum="1"
-                                           Maximum="2000"
-                                           FormatString="F0" />
-                        </Grid>
+                            <Separator Height="1" Background="#E1E4E8" Margin="0,4" />
 
-                        <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasM}">
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Шаг по размеру M:" FontWeight="Medium" />
-                                <TextBlock Text="Интервал между точками M" FontSize="11" Foreground="#656D76" />
-                            </StackPanel>
-                            <NumericUpDown Grid.Column="1"
-                                           Value="{Binding MStep}"
-                                           Minimum="1"
-                                           Maximum="1000"
-                                           FormatString="F0" />
-                        </Grid>
+                            <TextBlock Text="Индивидуальные параметры эксперимента"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#1F2328" />
 
-                        <!-- Дополнительный параметр K (для Миллера-Рабина) -->
-                        <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasK}">
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Число раундов K:" FontWeight="Medium" />
-                                <TextBlock Text="Параметр точности теста" FontSize="11" Foreground="#656D76" />
-                            </StackPanel>
-                            <NumericUpDown Grid.Column="1"
-                                           Value="{Binding K}"
-                                           Minimum="1"
-                                           Maximum="200"
-                                           FormatString="F0" />
-                        </Grid>
+                            <!-- NMax -->
+                            <Grid ColumnDefinitions="200, 160">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Максимальный размер N:" FontWeight="Medium" />
+                                    <TextBlock Text="Конечная граница сетки" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding NMax}"
+                                               Minimum="1"
+                                               Maximum="2000000"
+                                               FormatString="F0" />
+                            </Grid>
 
-                        <!-- Дополнительный параметр X (для степени / полинома) -->
-                        <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasX}">
-                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Основание / аргумент X:" FontWeight="Medium" />
-                                <TextBlock Text="Значение основания числа" FontSize="11" Foreground="#656D76" />
-                            </StackPanel>
-                            <NumericUpDown Grid.Column="1"
-                                           Value="{Binding X}"
-                                           Increment="0.1"
-                                           FormatString="F4" />
-                        </Grid>
+                            <!-- NStep -->
+                            <Grid ColumnDefinitions="200, 160">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Шаг по N:" FontWeight="Medium" />
+                                    <TextBlock Text="Интервал между точками" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding NStep}"
+                                               Minimum="1"
+                                               Maximum="500000"
+                                               FormatString="F0" />
+                            </Grid>
 
-                        <CheckBox IsChecked="{Binding ForceRecalculate}"
-                                  Content="Принудительный пересчёт (игнорировать кэш БД)"
-                                  Margin="0,8,0,0" />
+                            <!-- RunsPerN -->
+                            <Grid ColumnDefinitions="200, 160">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Число повторов на N:" FontWeight="Medium" />
+                                    <TextBlock Text="Число независимых прогонов" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding RunsPerN}"
+                                               Minimum="1"
+                                               Maximum="50"
+                                               FormatString="F0" />
+                            </Grid>
 
-                        <Button Content="Сбросить параметры к рекомендованным"
-                                Command="{Binding $parent[UserControl].((vm:ExperimentSetupViewModel)DataContext).ResetDefaultsCommand}"
-                                HorizontalAlignment="Left"
-                                Margin="0,4,0,0" />
-                    </StackPanel>
+                            <!-- Для матриц: информационная карточка о том, что n и m имеют одинаковый максимум и шаг -->
+                            <Border Background="#F0F8FF" BorderBrush="#B6E3FF" BorderThickness="1" CornerRadius="6" Padding="12,10" IsVisible="{Binding HasM}">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="ℹ️ Размеры матрицы: n и m синхронизированы"
+                                               FontWeight="SemiBold"
+                                               Foreground="#0969DA" />
+                                    <TextBlock Text="Размерность m имеет тот же максимум и шаг, что и n (сетка строится по диапазону [Шаг .. N] для обоих измерений)."
+                                               TextWrapping="Wrap"
+                                               FontSize="12"
+                                               Foreground="#1F2328" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Дополнительный параметр K (для Миллера-Рабина) -->
+                            <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasK}">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Число раундов K:" FontWeight="Medium" />
+                                    <TextBlock Text="Параметр точности теста" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding K}"
+                                               Minimum="1"
+                                               Maximum="200"
+                                               FormatString="F0" />
+                            </Grid>
+
+                            <!-- Дополнительный параметр X (для степени / полинома) -->
+                            <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasX}">
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="Основание / аргумент X:" FontWeight="Medium" />
+                                    <TextBlock Text="Значение основания числа" FontSize="11" Foreground="#656D76" />
+                                </StackPanel>
+                                <NumericUpDown Grid.Column="1"
+                                               Value="{Binding X}"
+                                               Increment="0.1"
+                                               FormatString="F4" />
+                            </Grid>
+
+                            <CheckBox IsChecked="{Binding ForceRecalculate}"
+                                      Content="Принудительный пересчёт (игнорировать кэш БД)"
+                                      Margin="0,8,0,0" />
+
+                            <Button Content="Сбросить параметры к рекомендованным"
+                                    Command="{Binding $parent[UserControl].((vm:ExperimentSetupViewModel)DataContext).ResetDefaultsCommand}"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Grid>
                 </ScrollViewer>
             </Border>
 
