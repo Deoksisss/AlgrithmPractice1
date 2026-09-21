@@ -13,29 +13,22 @@ public partial class ExperimentSetupViewModel : ViewModelBase
 {
     public ObservableCollection<AlgorithmSelectionItem> Algorithms { get; } = new();
 
+    public ObservableCollection<AlgorithmSelectionItem> VectorAlgorithms { get; } = new();
+    public ObservableCollection<AlgorithmSelectionItem> MatrixAlgorithms { get; } = new();
+    public ObservableCollection<AlgorithmSelectionItem> IndividualAlgorithms { get; } = new();
+    public ObservableCollection<AlgorithmSelectionItem> ExponentiationAlgorithms { get; } = new();
+
     [ObservableProperty]
     private string _sessionLabel = string.Empty;
 
     [ObservableProperty]
-    private AlgorithmSelectionItem? _selectedItem;
+    private AlgorithmSelectionItem? _selectedIndividualAlgorithm;
 
     [ObservableProperty]
     private string _errorMessage = string.Empty;
 
-    // Режим настроек: общие для всех vs индивидуальные
     [ObservableProperty]
-    private bool _useCommonSettings = true;
-
-    public bool IsIndividualSettings
-    {
-        get => !UseCommonSettings;
-        set => UseCommonSettings = !value;
-    }
-
-    partial void OnUseCommonSettingsChanged(bool value)
-    {
-        OnPropertyChanged(nameof(IsIndividualSettings));
-    }
+    private string _selectedCountText = string.Empty;
 
     // Общие параметры для всех алгоритмов
     [ObservableProperty]
@@ -56,45 +49,91 @@ public partial class ExperimentSetupViewModel : ViewModelBase
     [ObservableProperty]
     private bool _commonForceRecalculate = false;
 
+    // Флаг использования индивидуальных настроек вместо общих
+    [ObservableProperty]
+    private bool _useIndividualSettings = false;
+
     public event Action<IReadOnlyList<ExperimentRequest>, string?>? StartExperimentRequested;
 
     public ExperimentSetupViewModel()
     {
         foreach (var alg in AlgorithmRegistry.Instance.All)
         {
-            Algorithms.Add(new AlgorithmSelectionItem(alg));
+            var item = new AlgorithmSelectionItem(alg);
+            item.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(AlgorithmSelectionItem.IsSelected))
+                {
+                    UpdateSelectedCountText();
+                }
+            };
+
+            Algorithms.Add(item);
+
+            switch (alg.Category)
+            {
+                case AlgorithmCategory.Vectors:
+                    VectorAlgorithms.Add(item);
+                    break;
+                case AlgorithmCategory.Matrices:
+                    MatrixAlgorithms.Add(item);
+                    break;
+                case AlgorithmCategory.Individual:
+                    IndividualAlgorithms.Add(item);
+                    break;
+                case AlgorithmCategory.Exponentiation:
+                    ExponentiationAlgorithms.Add(item);
+                    break;
+            }
         }
 
         if (Algorithms.Count > 0)
         {
-            SelectedItem = Algorithms[0];
+            SelectedIndividualAlgorithm = Algorithms[0];
         }
+
+        UpdateSelectedCountText();
+    }
+
+    private void UpdateSelectedCountText()
+    {
+        int selected = Algorithms.Count(a => a.IsSelected);
+        SelectedCountText = $"Выбрано: {selected} из {Algorithms.Count}";
     }
 
     [RelayCommand]
     private void SelectAll()
     {
-        foreach (var item in Algorithms)
-        {
-            item.IsSelected = true;
-        }
+        foreach (var item in Algorithms) item.IsSelected = true;
+        UpdateSelectedCountText();
     }
 
     [RelayCommand]
     private void DeselectAll()
     {
-        foreach (var item in Algorithms)
+        foreach (var item in Algorithms) item.IsSelected = false;
+        UpdateSelectedCountText();
+    }
+
+    [RelayCommand]
+    private void SelectCategory(string categoryName)
+    {
+        if (Enum.TryParse<AlgorithmCategory>(categoryName, true, out var cat))
         {
-            item.IsSelected = false;
+            foreach (var item in Algorithms)
+            {
+                item.IsSelected = (item.Algorithm.Category == cat);
+            }
+            UpdateSelectedCountText();
         }
     }
 
     [RelayCommand]
     private void ResetDefaults()
     {
-        if (SelectedItem != null)
+        if (SelectedIndividualAlgorithm != null)
         {
-            SelectedItem.ResetToDefaults();
+            SelectedIndividualAlgorithm.ResetToDefaults();
         }
     }
 
@@ -159,7 +198,7 @@ public partial class ExperimentSetupViewModel : ViewModelBase
         }
 
         List<ExperimentRequest> requests;
-        if (UseCommonSettings)
+        if (!UseIndividualSettings)
         {
             int nMax = Math.Max(1, CommonNMax);
             int nStep = Math.Max(1, CommonNStep);
