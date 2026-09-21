@@ -1,0 +1,237 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AlgorithmPractice1.GUI.ViewModels"
+             xmlns:models="clr-namespace:AlgorithmPractice1.GUI.Models"
+             x:Class="AlgorithmPractice1.GUI.Views.ExperimentSetupView"
+             x:DataType="vm:ExperimentSetupViewModel">
+
+    <Grid ColumnDefinitions="380, *" Margin="16">
+        <!-- Левая колонка: выбор алгоритмов -->
+        <Border Grid.Column="0"
+                Background="White"
+                BorderBrush="#D0D7DE"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12"
+                Margin="0,0,12,0">
+            <Grid RowDefinitions="Auto, Auto, *">
+                <TextBlock Grid.Row="0"
+                           Text="Алгоритмы для исследования"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="#1F2328"
+                           Margin="0,0,0,10" />
+
+                <!-- Панель быстрых действий -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,0,0,10">
+                    <Button Content="Выбрать все"
+                            Command="{Binding SelectAllCommand}"
+                            FontSize="12"
+                            Padding="8,4" />
+                    <Button Content="Снять выбор"
+                            Command="{Binding DeselectAllCommand}"
+                            FontSize="12"
+                            Padding="8,4" />
+                    <Button Content="Сбросить все"
+                            Command="{Binding ResetAllDefaultsCommand}"
+                            FontSize="12"
+                            Padding="8,4" />
+                </StackPanel>
+
+                <!-- Список алгоритмов -->
+                <ListBox Grid.Row="2"
+                         ItemsSource="{Binding Algorithms}"
+                         SelectedItem="{Binding SelectedItem}"
+                         Background="Transparent">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:AlgorithmSelectionItem">
+                            <Grid ColumnDefinitions="Auto, *" Margin="2">
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{Binding IsSelected}"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,8,0" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Algorithm.DisplayName}"
+                                               FontWeight="Medium"
+                                               Foreground="#1F2328" />
+                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                                        <Border Background="#EBF5FF" CornerRadius="4" Padding="4,1">
+                                            <TextBlock Text="{Binding CategoryDisplayName}"
+                                                       FontSize="10"
+                                                       Foreground="#0969DA" />
+                                        </Border>
+                                        <Border Background="#F6F8FA" CornerRadius="4" Padding="4,1">
+                                            <TextBlock Text="{Binding ComplexityDisplayName}"
+                                                       FontSize="10"
+                                                       Foreground="#656D76" />
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Правая колонка: параметры выбранного алгоритма и запуск -->
+        <Grid Grid.Column="1" RowDefinitions="*, Auto">
+            <!-- Панель параметров -->
+            <Border Grid.Row="0"
+                    Background="White"
+                    BorderBrush="#D0D7DE"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="16"
+                    Margin="0,0,0,12">
+                <ScrollViewer>
+                    <StackPanel Spacing="14" DataContext="{Binding SelectedItem}">
+                        <TextBlock Text="{Binding Algorithm.DisplayName}"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   Foreground="#1F2328" />
+
+                        <TextBlock Text="{Binding Algorithm.Description}"
+                                   TextWrapping="Wrap"
+                                   FontSize="13"
+                                   Foreground="#57606A" />
+
+                        <Separator Height="1" Background="#E1E4E8" Margin="0,4" />
+
+                        <TextBlock Text="Параметры эксперимента"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1F2328" />
+
+                        <!-- NMax -->
+                        <Grid ColumnDefinitions="200, 160">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Максимальный размер N:" FontWeight="Medium" />
+                                <TextBlock Text="Конечная граница сетки" FontSize="11" Foreground="#656D76" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1"
+                                           Value="{Binding NMax}"
+                                           Minimum="1"
+                                           Maximum="2000000"
+                                           FormatString="F0" />
+                        </Grid>
+
+                        <!-- NStep -->
+                        <Grid ColumnDefinitions="200, 160">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Шаг по N:" FontWeight="Medium" />
+                                <TextBlock Text="Интервал между точками" FontSize="11" Foreground="#656D76" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1"
+                                           Value="{Binding NStep}"
+                                           Minimum="1"
+                                           Maximum="500000"
+                                           FormatString="F0" />
+                        </Grid>
+
+                        <!-- RunsPerN -->
+                        <Grid ColumnDefinitions="200, 160">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Число повторов на N:" FontWeight="Medium" />
+                                <TextBlock Text="Число независимых прогонов" FontSize="11" Foreground="#656D76" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1"
+                                           Value="{Binding RunsPerN}"
+                                           Minimum="1"
+                                           Maximum="50"
+                                           FormatString="F0" />
+                        </Grid>
+
+                        <!-- Дополнительный параметр M (для матриц) -->
+                        <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasM}">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Второй размер матрицы M:" FontWeight="Medium" />
+                                <TextBlock Text="Фиксированное значение M" FontSize="11" Foreground="#656D76" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1"
+                                           Value="{Binding M}"
+                                           Minimum="1"
+                                           Maximum="5000"
+                                           FormatString="F0" />
+                        </Grid>
+
+                        <!-- Дополнительный параметр K (для Миллера-Рабина) -->
+                        <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasK}">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Число раундов K:" FontWeight="Medium" />
+                                <TextBlock Text="Параметр точности теста" FontSize="11" Foreground="#656D76" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1"
+                                           Value="{Binding K}"
+                                           Minimum="1"
+                                           Maximum="200"
+                                           FormatString="F0" />
+                        </Grid>
+
+                        <!-- Дополнительный параметр X (для степени / полинома) -->
+                        <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasX}">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Основание / аргумент X:" FontWeight="Medium" />
+                                <TextBlock Text="Значение основания числа" FontSize="11" Foreground="#656D76" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1"
+                                           Value="{Binding X}"
+                                           Increment="0.1"
+                                           FormatString="F4" />
+                        </Grid>
+
+                        <CheckBox IsChecked="{Binding ForceRecalculate}"
+                                  Content="Принудительный пересчёт (игнорировать кэш БД)"
+                                  Margin="0,8,0,0" />
+
+                        <Button Content="Сбросить параметры к рекомендованным"
+                                Command="{Binding $parent[UserControl].((vm:ExperimentSetupViewModel)DataContext).ResetDefaultsCommand}"
+                                HorizontalAlignment="Left"
+                                Margin="0,4,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Нижняя панель запуска -->
+            <Border Grid.Row="1"
+                    Background="White"
+                    BorderBrush="#D0D7DE"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="14">
+                <Grid ColumnDefinitions="*, Auto" RowDefinitions="Auto, Auto">
+                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,0">
+                        <TextBlock Text="Название сессии (опционально):"
+                                   FontWeight="Medium"
+                                   FontSize="12"
+                                   Foreground="#57606A"
+                                   Margin="0,0,0,4" />
+                        <TextBox Text="{Binding SessionLabel}"
+                                 Watermark="Например: Калибровочный прогон #1" />
+                    </StackPanel>
+
+                    <Button Grid.Row="0" Grid.Column="1"
+                            Command="{Binding RunExperimentCommand}"
+                            Background="#1F883D"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            FontSize="14"
+                            Padding="20,10"
+                            VerticalAlignment="Bottom">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="🚀" />
+                            <TextBlock Text="Запустить эксперимент" />
+                        </StackPanel>
+                    </Button>
+
+                    <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
+                               Text="{Binding ErrorMessage}"
+                               Foreground="#CF222E"
+                               FontWeight="Medium"
+                               Margin="0,8,0,0"
+                               IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

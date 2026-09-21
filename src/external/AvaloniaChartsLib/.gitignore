@@ -1,0 +1,34 @@
+## Build and output directories
+bin/
+obj/
+out/
+[D-d]ebug/
+[R-r]elease/
+x64/
+x86/
+build/
+packages/
+
+## User-specific files & IDEs
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.userprefs
+.vs/
+.idea/
+.fleet/
+.vscode/
+
+## NuGet
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.assets.json
+
+## OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:AlgorithmPractice1.GUI.Models"
+             x:Class="AlgorithmPractice1.GUI.Views.ChartDisplayView"
+             x:DataType="models:ChartDisplayModel">
+
+    <Border Background="White"
+            BorderBrush="#D0D7DE"
+            BorderThickness="1"
+            CornerRadius="6"
+            Margin="0,0,0,16"
+            Padding="12">
+        <Grid RowDefinitions="Auto, *">
+            <!-- Заголовок графика и подзаголовок -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                <TextBlock Text="{Binding Title}"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="#1F2328" />
+                <TextBlock Text="{Binding Subtitle}"
+                           FontSize="12"
+                           Foreground="#656D76"
+                           Margin="0,2,0,0" />
+            </StackPanel>
+
+            <!-- Контейнер для размещения Chart2DControl или Chart3DControl -->
+            <Border Grid.Row="1"
+                    x:Name="ChartHost"
+                    MinHeight="380"
+                    ClipToBounds="True"
+                    Background="White" />
+        </Grid>
+    </Border>
+</UserControl>

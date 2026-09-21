@@ -1,0 +1,41 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+Generated\ Files/
+
+# Visual Studio & IDEs
+.vs/
+.idea/
+.vscode/
+*.user
+*.userosv
+*.suo
+*.userprefs
+*.sln.docstates
+
+# Database & SQLite files
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+algorithm_practice.db*
+
+# BenchmarkDotNet artifacts & test results
+[Bb]enchmark[Dd]ot[Nn]et.[Aa]rtifacts/
+TestResults/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+# Temporary and backup files
+*.bak
+*.tmp
+*.swp
+*~

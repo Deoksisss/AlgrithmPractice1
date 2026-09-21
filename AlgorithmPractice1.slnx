@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AlgorithmPractice1.Core/AlgorithmPractice1.Core.csproj" />
+    <Project Path="src/AlgorithmPractice1.GUI/AlgorithmPractice1.GUI.csproj" />
+  </Folder>
+  <Folder Name="/src/external/" />
+  <Folder Name="/src/external/AvaloniaChartsLib/" />
+  <Folder Name="/src/external/AvaloniaChartsLib/src/">
+    <Project Path="src/external/AvaloniaChartsLib/src/AvaloniaCharts.Controls/AvaloniaCharts.Controls.csproj" />
+    <Project Path="src/external/AvaloniaChartsLib/src/AvaloniaCharts.Core/AvaloniaCharts.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AlgorithmPractice1.Core.Tests/AlgorithmPractice1.Core.Tests.csproj" />
+  </Folder>
+</Solution>

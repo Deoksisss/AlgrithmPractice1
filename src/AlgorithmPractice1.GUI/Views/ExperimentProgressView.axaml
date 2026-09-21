@@ -1,0 +1,140 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AlgorithmPractice1.GUI.ViewModels"
+             xmlns:models="clr-namespace:AlgorithmPractice1.Core.Models;assembly=AlgorithmPractice1.Core"
+             x:Class="AlgorithmPractice1.GUI.Views.ExperimentProgressView"
+             x:DataType="vm:ExperimentProgressViewModel">
+
+    <Grid RowDefinitions="Auto, Auto, *, Auto" Margin="24">
+        <!-- Шапка: счетчик N/M и статус -->
+        <Border Grid.Row="0"
+                Background="White"
+                BorderBrush="#D0D7DE"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="20"
+                Margin="0,0,0,16">
+            <Grid ColumnDefinitions="*, Auto">
+                <StackPanel Grid.Column="0" Spacing="6">
+                    <TextBlock Text="Прогресс выполнения пакета"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="#1F2328" />
+                    <TextBlock Text="{Binding StatusSummary}"
+                               FontSize="14"
+                               Foreground="#57606A" />
+                </StackPanel>
+
+                <!-- Счетчик завершённых алгоритмов N/M -->
+                <Border Grid.Column="1"
+                        Background="#F6F8FA"
+                        BorderBrush="#D0D7DE"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="16,8"
+                        VerticalAlignment="Center">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="ЗАВЕРШЕНО"
+                                   FontSize="10"
+                                   FontWeight="Bold"
+                                   Foreground="#656D76"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding FractionText}"
+                                   FontSize="26"
+                                   FontWeight="Bold"
+                                   Foreground="#0969DA"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Прогресс-бар -->
+        <ProgressBar Grid.Row="1"
+                     Height="10"
+                     Value="{Binding Percentage}"
+                     Minimum="0"
+                     Maximum="100"
+                     Margin="0,0,0,16" />
+
+        <!-- Таблица алгоритмов с живыми статусами -->
+        <Border Grid.Row="2"
+                Background="White"
+                BorderBrush="#D0D7DE"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="16"
+                Margin="0,0,0,16">
+            <Grid RowDefinitions="Auto, *">
+                <TextBlock Grid.Row="0"
+                           Text="Статус алгоритмов пакета"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="#1F2328"
+                           Margin="0,0,0,12" />
+
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding Items}"
+                         Background="Transparent">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:AlgorithmProgressItem">
+                            <Border BorderBrush="#E1E4E8"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="10,8">
+                                <Grid ColumnDefinitions="40, 240, 180, *">
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding StatusIcon}"
+                                               FontSize="18"
+                                               VerticalAlignment="Center" />
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding AlgorithmName}"
+                                               FontWeight="SemiBold"
+                                               Foreground="#1F2328"
+                                               VerticalAlignment="Center" />
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding StatusDisplayName}"
+                                               FontWeight="Medium"
+                                               Foreground="#0969DA"
+                                               VerticalAlignment="Center" />
+
+                                    <TextBlock Grid.Column="3"
+                                               Text="{Binding Details}"
+                                               FontSize="12"
+                                               Foreground="#656D76"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Нижняя панель действий -->
+        <Border Grid.Row="3"
+                Background="White"
+                BorderBrush="#D0D7DE"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="14">
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <!-- Кнопка отмены явно заблокирована согласно ТЗ -->
+                <Button Grid.Column="0"
+                        Content="Отменить прогон"
+                        IsEnabled="False"
+                        ToolTip.Tip="Отмена активного прогона не предусмотрена заданием" />
+
+                <Button Grid.Column="2"
+                        Content="Перейти к результатам и графикам 📊"
+                        Command="{Binding GoToResultsCommand}"
+                        IsEnabled="{Binding IsCompleted}"
+                        Background="#0969DA"
+                        Foreground="White"
+                        FontWeight="SemiBold"
+                        Padding="16,8" />
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

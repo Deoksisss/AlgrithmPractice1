@@ -1,0 +1,59 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1C69971D-513B-4AFE-BCAA-4C7C5A4619AA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaCharts.Core", "src\AvaloniaCharts.Core\AvaloniaCharts.Core.csproj", "{52545282-FC50-47D8-B64C-9C20AB061072}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaCharts.Controls", "src\AvaloniaCharts.Controls\AvaloniaCharts.Controls.csproj", "{D061C8EF-155C-4968-A129-279C588A812B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaCharts.Runner", "src\AvaloniaCharts.Runner\AvaloniaCharts.Runner.csproj", "{41060406-C0C8-4EEB-B95F-874F8E3287B0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{69BECAE3-6854-4EAF-AF14-F3DE7D896309}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaCharts.Demo", "samples\AvaloniaCharts.Demo\AvaloniaCharts.Demo.csproj", "{42D63C84-3B8F-4CA9-98E8-C6E9757F2FCA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6AA254C2-599D-4EDD-A490-96EFC6951DB9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaCharts.Tests", "tests\AvaloniaCharts.Tests\AvaloniaCharts.Tests.csproj", "{A1D5D2CF-9C44-426F-9931-803B45F700F2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{52545282-FC50-47D8-B64C-9C20AB061072}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52545282-FC50-47D8-B64C-9C20AB061072}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52545282-FC50-47D8-B64C-9C20AB061072}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52545282-FC50-47D8-B64C-9C20AB061072}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D061C8EF-155C-4968-A129-279C588A812B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D061C8EF-155C-4968-A129-279C588A812B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D061C8EF-155C-4968-A129-279C588A812B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D061C8EF-155C-4968-A129-279C588A812B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{41060406-C0C8-4EEB-B95F-874F8E3287B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41060406-C0C8-4EEB-B95F-874F8E3287B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41060406-C0C8-4EEB-B95F-874F8E3287B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41060406-C0C8-4EEB-B95F-874F8E3287B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42D63C84-3B8F-4CA9-98E8-C6E9757F2FCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42D63C84-3B8F-4CA9-98E8-C6E9757F2FCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42D63C84-3B8F-4CA9-98E8-C6E9757F2FCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42D63C84-3B8F-4CA9-98E8-C6E9757F2FCA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1D5D2CF-9C44-426F-9931-803B45F700F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1D5D2CF-9C44-426F-9931-803B45F700F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1D5D2CF-9C44-426F-9931-803B45F700F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1D5D2CF-9C44-426F-9931-803B45F700F2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{52545282-FC50-47D8-B64C-9C20AB061072} = {1C69971D-513B-4AFE-BCAA-4C7C5A4619AA}
+		{D061C8EF-155C-4968-A129-279C588A812B} = {1C69971D-513B-4AFE-BCAA-4C7C5A4619AA}
+		{41060406-C0C8-4EEB-B95F-874F8E3287B0} = {1C69971D-513B-4AFE-BCAA-4C7C5A4619AA}
+		{42D63C84-3B8F-4CA9-98E8-C6E9757F2FCA} = {69BECAE3-6854-4EAF-AF14-F3DE7D896309}
+		{A1D5D2CF-9C44-426F-9931-803B45F700F2} = {6AA254C2-599D-4EDD-A490-96EFC6951DB9}
+	EndGlobalSection
+EndGlobal

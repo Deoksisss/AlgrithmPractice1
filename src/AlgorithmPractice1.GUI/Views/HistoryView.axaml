@@ -1,0 +1,155 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AlgorithmPractice1.GUI.ViewModels"
+             xmlns:models="clr-namespace:AlgorithmPractice1.GUI.Models"
+             xmlns:views="clr-namespace:AlgorithmPractice1.GUI.Views"
+             x:Class="AlgorithmPractice1.GUI.Views.HistoryView"
+             x:DataType="vm:HistoryViewModel">
+
+    <Grid ColumnDefinitions="360, *" Margin="16">
+        <!-- Левая колонка: история сессий -->
+        <Border Grid.Column="0"
+                Background="White"
+                BorderBrush="#D0D7DE"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12"
+                Margin="0,0,12,0">
+            <Grid RowDefinitions="Auto, Auto, *">
+                <TextBlock Grid.Row="0"
+                           Text="История сессий"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="#1F2328"
+                           Margin="0,0,0,10" />
+
+                <!-- Панель управления сессиями -->
+                <StackPanel Grid.Row="1" Spacing="6" Margin="0,0,0,10">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Button Content="Выбрать все"
+                                Command="{Binding SelectAllSessionsCommand}"
+                                FontSize="12"
+                                Padding="8,4" />
+                        <Button Content="Снять выбор"
+                                Command="{Binding DeselectAllSessionsCommand}"
+                                FontSize="12"
+                                Padding="8,4" />
+                        <Button Content="Обновить"
+                                Command="{Binding LoadSessionsCommand}"
+                                FontSize="12"
+                                Padding="8,4" />
+                    </StackPanel>
+                    <Button Content="🗑️ Удалить выбранные"
+                            Command="{Binding DeleteSelectedSessionsCommand}"
+                            FontSize="12"
+                            Foreground="#CF222E"
+                            Padding="8,4" />
+                </StackPanel>
+
+                <!-- Список сессий -->
+                <ListBox Grid.Row="2"
+                         ItemsSource="{Binding Sessions}"
+                         Background="Transparent">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:SessionListItemViewModel">
+                            <Border BorderBrush="#E1E4E8"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="4,8">
+                                <Grid ColumnDefinitions="Auto, *">
+                                    <CheckBox Grid.Column="0"
+                                              IsChecked="{Binding IsSelected}"
+                                              VerticalAlignment="Top"
+                                              Margin="0,2,8,0" />
+                                    <StackPanel Grid.Column="1" Spacing="2">
+                                        <TextBlock Text="{Binding DisplayLabel}"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#1F2328" />
+                                        <TextBlock Text="{Binding FormattedDate}"
+                                                   FontSize="11"
+                                                   Foreground="#57606A" />
+                                        <TextBlock Text="{Binding AlgorithmsSummary}"
+                                                   FontSize="11"
+                                                   Foreground="#0969DA"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Правая колонка: отображение графиков (сворачиваемые Expander'ы в режиме сессии / мульти-серии в сравнении) -->
+        <Border Grid.Column="1"
+                Background="White"
+                BorderBrush="#D0D7DE"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="16">
+            <Grid RowDefinitions="Auto, *">
+                <!-- Статусная строка -->
+                <Border Grid.Row="0"
+                        Background="#F6F8FA"
+                        BorderBrush="#D0D7DE"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12,8"
+                        Margin="0,0,0,12">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding StatusMessage}"
+                                   FontWeight="Medium"
+                                   Foreground="#1F2328"
+                                   VerticalAlignment="Center" />
+
+                        <Border Grid.Column="1"
+                                Background="#DDF4FF"
+                                BorderBrush="#54AEFF"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="8,2"
+                                IsVisible="{Binding IsComparisonMode}">
+                            <TextBlock Text="Сравнение сессий"
+                                       FontSize="11"
+                                       FontWeight="Bold"
+                                       Foreground="#0969DA" />
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Контейнер с графиками -->
+                <ScrollViewer Grid.Row="1">
+                    <ItemsControl ItemsSource="{Binding DisplayCharts}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:ChartDisplayModel">
+                                <Expander IsExpanded="True"
+                                          Margin="0,0,0,12"
+                                          HorizontalAlignment="Stretch">
+                                    <Expander.Header>
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding Title}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="15"
+                                                       Foreground="#1F2328" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Subtitle}"
+                                                       FontSize="12"
+                                                       Foreground="#57606A"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8,0,0,0" />
+                                        </Grid>
+                                    </Expander.Header>
+
+                                    <!-- Сам график -->
+                                    <views:ChartDisplayView DataContext="{Binding}" Margin="0,8,0,0" />
+                                </Expander>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

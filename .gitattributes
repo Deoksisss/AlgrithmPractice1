@@ -1,0 +1,28 @@
+# Auto detect text files and perform LF normalization
+* text=auto eol=lf
+
+# Explicitly declare text files you want to always be normalized and converted to native line endings on checkout
+*.sln text eol=crlf
+*.slnx text eol=crlf
+*.csproj text eol=crlf
+*.props text eol=crlf
+*.targets text eol=crlf
+
+# C# and XAML sources
+*.cs text diff=csharp eol=lf
+*.axaml text diff=xml eol=lf
+*.xaml text diff=xml eol=lf
+*.xml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Denormalize binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.pdf binary
+*.dll binary
+*.exe binary
