@@ -62,4 +62,41 @@ public class ExperimentRunnerTests
         var session3 = await runner.RunBatchAsync(forceRequests, "Session 3");
         Assert.Single(session3.Algorithms);
     }
+
+    [Fact]
+    public async Task RunBatchAsync_ExecutesMatrixGrid_CoversAllPairsOfNandM()
+    {
+        var factory = SqliteConnectionFactory.CreateInMemory();
+        using var keepAlive = factory.CreateConnection();
+        await DatabaseInitializer.InitializeAsync(factory);
+
+        var sessionRepo = new SessionRepository(factory);
+        var measurementRepo = new MeasurementRepository(factory);
+        var approxRepo = new ApproximationRepository(factory);
+        var runner = new ExperimentRunner(sessionRepo, measurementRepo, approxRepo);
+
+        var matrixAlg = new AlgorithmPractice1.Core.Algorithms.Part2_Matrices.MatrixMultiplicationAlgorithm();
+        // N in {20, 40}, M in {20, 40} -> 4 pairs of (N, M), 1 run each
+        var config = new ExperimentConfig
+        {
+            NMax = 40,
+            NStep = 20,
+            M = 40,
+            MStep = 20,
+            RunsPerN = 1
+        };
+
+        var requests = new List<ExperimentRequest> { new(matrixAlg, config) };
+        var session = await runner.RunBatchAsync(requests, "Matrix Grid Session");
+
+        Assert.Single(session.Algorithms);
+        var algResult = session.Algorithms[0];
+        Assert.Equal(4, algResult.Measurements.Count);
+
+        var pairs = algResult.Measurements.Select(m => (m.N, m.M.GetValueOrDefault())).OrderBy(p => p.N).ThenBy(p => p.Item2).ToList();
+        Assert.Contains((20, 20), pairs);
+        Assert.Contains((20, 40), pairs);
+        Assert.Contains((40, 20), pairs);
+        Assert.Contains((40, 40), pairs);
+    }
 }

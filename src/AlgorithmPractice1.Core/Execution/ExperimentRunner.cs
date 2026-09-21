@@ -58,13 +58,29 @@ public sealed class ExperimentRunner
         session = session with { Id = sessionId };
 
         // Инициализируем элементы прогресса
-        var progressItems = requests.Select(r => new AlgorithmProgressItem
+        var progressItems = requests.Select(r =>
         {
-            AlgorithmId = r.Algorithm.Id,
-            AlgorithmName = r.Algorithm.DisplayName,
-            Status = AlgorithmExecutionStatus.Queued,
-            CurrentN = 0,
-            TotalNCount = Math.Max(1, r.Config.NMax / Math.Max(1, r.Config.NStep))
+            int nStep = Math.Max(1, r.Config.NStep);
+            int nMax = Math.Max(nStep, r.Config.NMax);
+            int nPoints = (nMax - nStep) / nStep + 1;
+
+            int totalGridPoints = nPoints;
+            if (r.Algorithm.Category == AlgorithmCategory.Matrices)
+            {
+                int mStep = Math.Max(1, r.Config.MStep.GetValueOrDefault(nStep));
+                int mMax = Math.Max(mStep, r.Config.M.GetValueOrDefault(nMax));
+                int mPoints = (mMax - mStep) / mStep + 1;
+                totalGridPoints = nPoints * mPoints;
+            }
+
+            return new AlgorithmProgressItem
+            {
+                AlgorithmId = r.Algorithm.Id,
+                AlgorithmName = r.Algorithm.DisplayName,
+                Status = AlgorithmExecutionStatus.Queued,
+                CurrentN = 0,
+                TotalNCount = totalGridPoints
+            };
         }).ToList();
 
         int completedCount = 0;
@@ -151,64 +167,123 @@ public sealed class ExperimentRunner
             int nMax = Math.Max(step, config.NMax);
             int runs = Math.Max(1, config.RunsPerN);
 
-            for (int n = step; n <= nMax; n += step)
+            if (alg.Category == AlgorithmCategory.Matrices)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                // Двумерная сетка (N x M) для матричного умножения
+                int mStep = Math.Max(1, config.MStep.GetValueOrDefault(step));
+                int mMax = Math.Max(mStep, config.M.GetValueOrDefault(nMax));
+                int totalGridPoints = ((nMax - step) / step + 1) * ((mMax - mStep) / mStep + 1);
+                int completedPoints = 0;
 
-                item.CurrentN = n;
-                ReportProgress(alg.Id);
-
-                // Прогрев перед серией запусков для режима Time
-                if (alg.MeasurementType == MeasurementType.Time)
+                // Прогрев на небольшой матрице
+                try
                 {
-                    try
-                    {
-                        var warmupInput = alg.GenerateInput(Math.Min(n, 100), config);
-                        alg.Execute(warmupInput, null);
-                    }
-                    catch { /* Игнорируем ошибки прогрева */ }
-
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    GC.Collect();
+                    var warmupInput = alg.GenerateInput(Math.Min(nMax, 50), config with { M = Math.Min(mMax, 50) });
+                    alg.Execute(warmupInput, null);
                 }
+                catch { }
 
-                for (int run = 1; run <= runs; run++)
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+
+                for (int n = step; n <= nMax; n += step)
+                {
+                    for (int m = mStep; m <= mMax; m += mStep)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        completedPoints++;
+                        item.CurrentN = completedPoints;
+                        item.Details = $"N = {n}, M = {m} ({completedPoints}/{totalGridPoints})";
+                        ReportProgress(alg.Id);
+
+                        var runConfig = config with { M = m };
+
+                        for (int run = 1; run <= runs; run++)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            object input = alg.GenerateInput(n, runConfig);
+                            long start = Stopwatch.GetTimestamp();
+                            alg.Execute(input, null);
+                            long elapsedTicks = Stopwatch.GetTimestamp() - start;
+
+                            calculatedPoints.Add(new MeasurementPoint
+                            {
+                                SessionAlgorithmId = sessionAlgorithmId,
+                                N = n,
+                                M = m,
+                                RunIndex = run,
+                                ElapsedTicks = elapsedTicks,
+                                StepCount = null
+                            });
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Одномерные алгоритмы по N
+                for (int n = step; n <= nMax; n += step)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    object input = alg.GenerateInput(n, config);
+                    item.CurrentN = n;
+                    ReportProgress(alg.Id);
 
+                    // Прогрев перед серией запусков для режима Time
                     if (alg.MeasurementType == MeasurementType.Time)
                     {
-                        long start = Stopwatch.GetTimestamp();
-                        alg.Execute(input, null);
-                        long elapsedTicks = Stopwatch.GetTimestamp() - start;
-
-                        calculatedPoints.Add(new MeasurementPoint
+                        try
                         {
-                            SessionAlgorithmId = sessionAlgorithmId,
-                            N = n,
-                            M = config.M,
-                            RunIndex = run,
-                            ElapsedTicks = elapsedTicks,
-                            StepCount = null
-                        });
+                            var warmupInput = alg.GenerateInput(Math.Min(n, 100), config);
+                            alg.Execute(warmupInput, null);
+                        }
+                        catch { /* Игнорируем ошибки прогрева */ }
+
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        GC.Collect();
                     }
-                    else
-                    {
-                        var context = new MeasurementContext();
-                        alg.Execute(input, context);
 
-                        calculatedPoints.Add(new MeasurementPoint
+                    for (int run = 1; run <= runs; run++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        object input = alg.GenerateInput(n, config);
+
+                        if (alg.MeasurementType == MeasurementType.Time)
                         {
-                            SessionAlgorithmId = sessionAlgorithmId,
-                            N = n,
-                            M = config.M,
-                            RunIndex = run,
-                            ElapsedTicks = null,
-                            StepCount = context.StepCount
-                        });
+                            long start = Stopwatch.GetTimestamp();
+                            alg.Execute(input, null);
+                            long elapsedTicks = Stopwatch.GetTimestamp() - start;
+
+                            calculatedPoints.Add(new MeasurementPoint
+                            {
+                                SessionAlgorithmId = sessionAlgorithmId,
+                                N = n,
+                                M = config.M,
+                                RunIndex = run,
+                                ElapsedTicks = elapsedTicks,
+                                StepCount = null
+                            });
+                        }
+                        else
+                        {
+                            var context = new MeasurementContext();
+                            alg.Execute(input, context);
+
+                            calculatedPoints.Add(new MeasurementPoint
+                            {
+                                SessionAlgorithmId = sessionAlgorithmId,
+                                N = n,
+                                M = config.M,
+                                RunIndex = run,
+                                ElapsedTicks = null,
+                                StepCount = context.StepCount
+                            });
+                        }
                     }
                 }
             }

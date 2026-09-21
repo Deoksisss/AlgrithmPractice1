@@ -30,9 +30,13 @@ public class CacheAndConfigTests
         var config2 = new ExperimentConfig { NMax = 2000, NStep = 100, RunsPerN = 5 };
         var config3 = new ExperimentConfig { NMax = 1000, NStep = 200, RunsPerN = 5 };
         var config4 = new ExperimentConfig { NMax = 1000, NStep = 100, RunsPerN = 10 };
+        var config5 = new ExperimentConfig { NMax = 1000, NStep = 100, RunsPerN = 5, M = 50 };
+        var config6 = new ExperimentConfig { NMax = 1000, NStep = 100, RunsPerN = 5, M = 50, MStep = 10 };
 
         Assert.NotEqual(config1.ComputeConfigHash(), config2.ComputeConfigHash());
         Assert.NotEqual(config1.ComputeConfigHash(), config3.ComputeConfigHash());
         Assert.NotEqual(config1.ComputeConfigHash(), config4.ComputeConfigHash());
+        Assert.NotEqual(config1.ComputeConfigHash(), config5.ComputeConfigHash());
+        Assert.NotEqual(config5.ComputeConfigHash(), config6.ComputeConfigHash());
     }
 }

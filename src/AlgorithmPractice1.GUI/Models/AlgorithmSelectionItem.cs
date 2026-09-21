@@ -24,6 +24,9 @@ public partial class AlgorithmSelectionItem : ObservableObject
     private int? _m;
 
     [ObservableProperty]
+    private int? _mStep;
+
+    [ObservableProperty]
     private int? _k;
 
     [ObservableProperty]
@@ -60,6 +63,7 @@ public partial class AlgorithmSelectionItem : ObservableObject
         NStep = def.NStep;
         RunsPerN = def.RunsPerN;
         M = def.M;
+        MStep = def.MStep;
         K = def.K;
         X = def.X;
         ForceRecalculate = false;
@@ -73,6 +77,7 @@ public partial class AlgorithmSelectionItem : ObservableObject
             NStep = NStep > 0 ? NStep : 10,
             RunsPerN = RunsPerN > 0 ? RunsPerN : 1,
             M = HasM ? M : null,
+            MStep = HasM ? MStep : null,
             K = HasK ? K : null,
             X = HasX ? X : null,
             ForceRecalculate = ForceRecalculate

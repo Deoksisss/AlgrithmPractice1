@@ -142,16 +142,28 @@
                                            FormatString="F0" />
                         </Grid>
 
-                        <!-- Дополнительный параметр M (для матриц) -->
+                        <!-- Дополнительные параметры сетки M (для матриц) -->
                         <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasM}">
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="Второй размер матрицы M:" FontWeight="Medium" />
-                                <TextBlock Text="Фиксированное значение M" FontSize="11" Foreground="#656D76" />
+                                <TextBlock Text="Максимальный размер M:" FontWeight="Medium" />
+                                <TextBlock Text="Конечная граница сетки M" FontSize="11" Foreground="#656D76" />
                             </StackPanel>
                             <NumericUpDown Grid.Column="1"
                                            Value="{Binding M}"
                                            Minimum="1"
-                                           Maximum="5000"
+                                           Maximum="2000"
+                                           FormatString="F0" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasM}">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Шаг по размеру M:" FontWeight="Medium" />
+                                <TextBlock Text="Интервал между точками M" FontSize="11" Foreground="#656D76" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1"
+                                           Value="{Binding MStep}"
+                                           Minimum="1"
+                                           Maximum="1000"
                                            FormatString="F0" />
                         </Grid>
 

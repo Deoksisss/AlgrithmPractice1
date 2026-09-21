@@ -25,9 +25,14 @@ public record ExperimentConfig
     public int RunsPerN { get; init; } = 5;
 
     /// <summary>
-    /// Второе измерение (M) для матричных алгоритмов (A: N x M, B: M x N).
+    /// Второе измерение (M) для матричных алгоритмов (A: N x M, B: M x N). Выступает как MMax.
     /// </summary>
     public int? M { get; init; }
+
+    /// <summary>
+    /// Шаг изменения M для матричных алгоритмов.
+    /// </summary>
+    public int? MStep { get; init; }
 
     /// <summary>
     /// Число раундов K (например, для вероятностного теста Миллера–Рабина).
@@ -50,7 +55,7 @@ public record ExperimentConfig
     /// </summary>
     public string ComputeConfigHash()
     {
-        string raw = $"NMax={NMax};NStep={NStep};Runs={RunsPerN};M={M};K={K};X={(X.HasValue ? X.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture) : "null")}";
+        string raw = $"NMax={NMax};NStep={NStep};Runs={RunsPerN};M={M};MStep={MStep};K={K};X={(X.HasValue ? X.Value.ToString("R", System.Globalization.CultureInfo.InvariantCulture) : "null")}";
         byte[] bytes = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
         return Convert.ToHexString(bytes).ToLowerInvariant();
     }
