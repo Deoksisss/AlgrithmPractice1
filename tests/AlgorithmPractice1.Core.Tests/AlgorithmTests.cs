@@ -3,6 +3,7 @@ using AlgorithmPractice1.Core.Algorithms.Part1_Vectors;
 using AlgorithmPractice1.Core.Algorithms.Part2_Matrices;
 using AlgorithmPractice1.Core.Algorithms.Part3_Individual;
 using AlgorithmPractice1.Core.Algorithms.Part4_Exponentiation;
+using AlgorithmPractice1.Core.Approximation;
 using AlgorithmPractice1.Core.Models;
 using Xunit;
 
@@ -129,21 +130,27 @@ public class AlgorithmTests
     public void PollardRho_TimingCheck()
     {
         var alg = new PollardRhoAlgorithm();
-        var config = alg.DefaultConfig;
-        var sw = new System.Diagnostics.Stopwatch();
+        var config = new ExperimentConfig { NMax = 150, NStep = 25, RunsPerN = 3 };
+        var points = new List<(double N, double EmpiricalValue)>();
 
-        for (int n = 4; n <= 44; n += 4)
+        for (int n = 25; n <= 150; n += 25)
         {
-            sw.Restart();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             for (int r = 0; r < 3; r++)
             {
                 var input = alg.GenerateTypedInput(n, config);
                 var f = alg.ExecuteTyped(input, null);
-                Assert.True(f > 1 && f <= input);
+                Assert.True(f > 1 && f < input);
             }
             sw.Stop();
-            System.Diagnostics.Trace.WriteLine($"n={n}: {sw.ElapsedMilliseconds} ms for 3 runs");
+            double avgMs = sw.Elapsed.TotalMilliseconds / 3.0;
+            points.Add((n, avgMs));
+            Console.WriteLine($"n={n}: {avgMs:F4} ms");
         }
+
+        var fit = LeastSquaresSolver.Fit(points, alg.TheoreticalComplexity);
+        Console.WriteLine($"PollardRho Fit: Function={fit.FunctionType}, C={fit.Coefficient:E3}, MSE={fit.Mse:E3}");
+        Assert.True(fit.Mse < 10.0);
     }
 
     [Fact]

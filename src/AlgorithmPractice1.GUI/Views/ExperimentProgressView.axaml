@@ -73,42 +73,42 @@
                            Foreground="#1F2328"
                            Margin="0,0,0,12" />
 
-                <ListBox Grid.Row="1"
-                         ItemsSource="{Binding Items}"
-                         Background="Transparent">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="models:AlgorithmProgressItem">
-                            <Border BorderBrush="#E1E4E8"
-                                    BorderThickness="0,0,0,1"
-                                    Padding="10,8">
-                                <Grid ColumnDefinitions="40, 240, 180, *">
-                                    <TextBlock Grid.Column="0"
-                                               Text="{Binding StatusIcon}"
-                                               FontSize="18"
-                                               VerticalAlignment="Center" />
+                <ScrollViewer Grid.Row="1">
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:AlgorithmProgressItem">
+                                <Border BorderBrush="#E1E4E8"
+                                        BorderThickness="0,0,0,1"
+                                        Padding="10,8">
+                                    <Grid ColumnDefinitions="40, 240, 180, *">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding StatusIcon}"
+                                                   FontSize="18"
+                                                   VerticalAlignment="Center" />
 
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding AlgorithmName}"
-                                               FontWeight="SemiBold"
-                                               Foreground="#1F2328"
-                                               VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding AlgorithmName}"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#1F2328"
+                                                   VerticalAlignment="Center" />
 
-                                    <TextBlock Grid.Column="2"
-                                               Text="{Binding StatusDisplayName}"
-                                               FontWeight="Medium"
-                                               Foreground="#0969DA"
-                                               VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding StatusDisplayName}"
+                                                   FontWeight="Medium"
+                                                   Foreground="#0969DA"
+                                                   VerticalAlignment="Center" />
 
-                                    <TextBlock Grid.Column="3"
-                                               Text="{Binding Details}"
-                                               FontSize="12"
-                                               Foreground="#656D76"
-                                               VerticalAlignment="Center" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                                        <TextBlock Grid.Column="3"
+                                                   Text="{Binding Details}"
+                                                   FontSize="12"
+                                                   Foreground="#656D76"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </Grid>
         </Border>
 
@@ -119,22 +119,14 @@
                 BorderThickness="1"
                 CornerRadius="8"
                 Padding="14">
-            <Grid ColumnDefinitions="Auto, *, Auto">
-                <!-- Кнопка отмены явно заблокирована согласно ТЗ -->
-                <Button Grid.Column="0"
-                        Content="Отменить прогон"
-                        IsEnabled="False"
-                        ToolTip.Tip="Отмена активного прогона не предусмотрена заданием" />
-
-                <Button Grid.Column="2"
-                        Content="Перейти к результатам и графикам 📊"
-                        Command="{Binding GoToResultsCommand}"
-                        IsEnabled="{Binding IsCompleted}"
-                        Background="#0969DA"
-                        Foreground="White"
-                        FontWeight="SemiBold"
-                        Padding="16,8" />
-            </Grid>
+            <Button HorizontalAlignment="Right"
+                    Content="Перейти к результатам и графикам 📊"
+                    Command="{Binding GoToResultsCommand}"
+                    IsEnabled="{Binding IsCompleted}"
+                    Background="#0969DA"
+                    Foreground="White"
+                    FontWeight="SemiBold"
+                    Padding="16,8" />
         </Border>
     </Grid>
 </UserControl>

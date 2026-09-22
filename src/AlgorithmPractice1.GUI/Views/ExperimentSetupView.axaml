@@ -88,27 +88,14 @@
                     </Grid>
 
                     <!-- Нижняя строка карточки настроек -->
-                    <Grid ColumnDefinitions="Auto, *, Auto">
+                    <Grid ColumnDefinitions="*, Auto">
                         <CheckBox Grid.Column="0"
                                   IsChecked="{Binding CommonForceRecalculate}"
                                   Content="Принудительный пересчёт (игнорировать кэш SQLite)"
                                   FontSize="12"
                                   VerticalAlignment="Center" />
 
-                        <Border Grid.Column="1"
-                                Background="#F0F8FF"
-                                BorderBrush="#B6E3FF"
-                                BorderThickness="1"
-                                CornerRadius="4"
-                                Padding="8,4"
-                                Margin="16,0"
-                                VerticalAlignment="Center">
-                            <TextBlock Text="💡 Матричное умножение: N и M изменяются одинаково [Шаг..N] × [Шаг..N] для построения 3D поверхности."
-                                       FontSize="11"
-                                       Foreground="#0969DA" />
-                        </Border>
-
-                        <Button Grid.Column="2"
+                        <Button Grid.Column="1"
                                 Content="📋 Применить ко всем алгоритмам в списке"
                                 Command="{Binding ApplyCommonToAllCommand}"
                                 FontSize="11"
@@ -186,17 +173,11 @@
                                 Padding="12"
                                 Margin="0,0,8,0">
                             <StackPanel Spacing="6">
-                                <Grid ColumnDefinitions="*, Auto" Margin="0,0,0,4">
-                                    <TextBlock Grid.Column="0"
-                                               Text="🔷 Часть I. Векторы (8 алгоритмов)"
-                                               FontWeight="Bold"
-                                               FontSize="13"
-                                               Foreground="#0969DA" />
-                                    <TextBlock Grid.Column="1"
-                                               Text="Метрика: время (мс)"
-                                               FontSize="10"
-                                               Foreground="#656D76" />
-                                </Grid>
+                                <TextBlock Text="Векторы"
+                                           FontWeight="Bold"
+                                           FontSize="13"
+                                           Foreground="#0969DA"
+                                           Margin="0,0,0,4" />
 
                                 <ItemsControl ItemsSource="{Binding VectorAlgorithms}">
                                     <ItemsControl.ItemTemplate>
@@ -236,17 +217,10 @@
                                     CornerRadius="6"
                                     Padding="10">
                                 <StackPanel Spacing="4">
-                                    <Grid ColumnDefinitions="*, Auto">
-                                        <TextBlock Grid.Column="0"
-                                                   Text="🔶 Часть II. Матрицы (3D график)"
-                                                   FontWeight="Bold"
-                                                   FontSize="12"
-                                                   Foreground="#BF8700" />
-                                        <TextBlock Grid.Column="1"
-                                                   Text="Метрика: время (мс)"
-                                                   FontSize="10"
-                                                   Foreground="#656D76" />
-                                    </Grid>
+                                    <TextBlock Text="Матрицы"
+                                               FontWeight="Bold"
+                                               FontSize="12"
+                                               Foreground="#BF8700" />
 
                                     <ItemsControl ItemsSource="{Binding MatrixAlgorithms}">
                                         <ItemsControl.ItemTemplate>
@@ -272,10 +246,6 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
-                                    <TextBlock Text="Размерности N и M меняются одинаково (от шага до N_max)."
-                                               FontSize="10"
-                                               Foreground="#656D76"
-                                               Margin="24,0,0,0" />
                                 </StackPanel>
                             </Border>
 
@@ -286,17 +256,10 @@
                                     CornerRadius="6"
                                     Padding="10">
                                 <StackPanel Spacing="4">
-                                    <Grid ColumnDefinitions="*, Auto">
-                                        <TextBlock Grid.Column="0"
-                                                   Text="🟣 Часть III. Индивидуальные алгоритмы (3)"
-                                                   FontWeight="Bold"
-                                                   FontSize="12"
-                                                   Foreground="#8250DF" />
-                                        <TextBlock Grid.Column="1"
-                                                   Text="Метрика: время (мс)"
-                                                   FontSize="10"
-                                                   Foreground="#656D76" />
-                                    </Grid>
+                                    <TextBlock Text="Индивидуальные алгоритмы"
+                                               FontWeight="Bold"
+                                               FontSize="12"
+                                               Foreground="#8250DF" />
 
                                     <ItemsControl ItemsSource="{Binding IndividualAlgorithms}">
                                         <ItemsControl.ItemTemplate>
@@ -334,17 +297,10 @@
                                     CornerRadius="6"
                                     Padding="10">
                                 <StackPanel Spacing="4">
-                                    <Grid ColumnDefinitions="*, Auto">
-                                        <TextBlock Grid.Column="0"
-                                                   Text="🟢 Часть IV. Возведение в степень (3)"
-                                                   FontWeight="Bold"
-                                                   FontSize="12"
-                                                   Foreground="#1A7F37" />
-                                        <TextBlock Grid.Column="1"
-                                                   Text="Метрика: шаги (число умножений)"
-                                                   FontSize="10"
-                                                   Foreground="#1A7F37" />
-                                    </Grid>
+                                    <TextBlock Text="Возведение в степень"
+                                               FontWeight="Bold"
+                                               FontSize="12"
+                                               Foreground="#1A7F37" />
 
                                     <ItemsControl ItemsSource="{Binding ExponentiationAlgorithms}">
                                         <ItemsControl.ItemTemplate>

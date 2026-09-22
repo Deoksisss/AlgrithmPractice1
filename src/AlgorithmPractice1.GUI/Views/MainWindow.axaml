@@ -18,39 +18,9 @@
         </Style>
     </Window.Styles>
 
-    <Grid RowDefinitions="Auto, *">
-        <!-- Верхняя панель заголовка -->
-        <Border Grid.Row="0"
-                Background="White"
-                BorderBrush="#D0D7DE"
-                BorderThickness="0,0,0,1"
-                Padding="16,12">
-            <Grid ColumnDefinitions="Auto, *, Auto">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <TextBlock Text="⚡" FontSize="22" VerticalAlignment="Center" />
-                    <TextBlock Text="AlgorithmPractice1"
-                               FontSize="18"
-                               FontWeight="Bold"
-                               Foreground="#1F2328"
-                               VerticalAlignment="Center" />
-                    <TextBlock Text="— Практикум по анализу сложности алгоритмов"
-                               FontSize="13"
-                               Foreground="#656D76"
-                               VerticalAlignment="Center"
-                               Margin="4,0,0,0" />
-                </StackPanel>
-
-                <TextBlock Grid.Column="2"
-                           Text=".NET 8 | Avalonia UI | Dapper | BenchmarkDotNet"
-                           FontSize="11"
-                           Foreground="#656D76"
-                           VerticalAlignment="Center" />
-            </Grid>
-        </Border>
-
+    <Grid>
         <!-- Навигация по вкладкам через нативный TabControl -->
-        <TabControl Grid.Row="1"
-                    SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
+        <TabControl SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
                     Margin="0">
             <TabItem Header="⚙️ Настройка эксперимента">
                 <views:ExperimentSetupView DataContext="{Binding Setup}" />

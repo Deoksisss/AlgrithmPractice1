@@ -5,7 +5,7 @@ namespace AlgorithmPractice1.Core.Algorithms.Part4_Exponentiation;
 
 /// <summary>
 /// 13. Рекурсивный алгоритм возведения в степень: x^n = x * x^(n-1).
-/// Измеряется количество операций умножения. Сложность O(n).
+/// Измеряется время выполнения (мс). Сложность O(n).
 /// </summary>
 public sealed class RecursiveExponentiationAlgorithm : AlgorithmBase<ExponentiationInput, double>
 {
@@ -13,16 +13,16 @@ public sealed class RecursiveExponentiationAlgorithm : AlgorithmBase<Exponentiat
 
     public override string Id => "RecursiveExponentiation";
     public override string DisplayName => "Возведение в степень (рекурсивное)";
-    public override string Description => "Рекурсивное определение x^n = x · x^(n-1). Измеряется количество умножений (O(n)).";
+    public override string Description => "Рекурсивное определение x^n = x · x^(n-1). Измеряется время выполнения (O(n)).";
     public override AlgorithmCategory Category => AlgorithmCategory.Exponentiation;
-    public override MeasurementType MeasurementType => MeasurementType.Steps;
+    public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Linear;
 
     public override ExperimentConfig DefaultConfig => new()
     {
-        NMax = 1000,
-        NStep = 50,
-        RunsPerN = 1,
+        NMax = 150,
+        NStep = 25,
+        RunsPerN = 3,
         X = DefaultBase
     };
 
@@ -34,7 +34,13 @@ public sealed class RecursiveExponentiationAlgorithm : AlgorithmBase<Exponentiat
 
     public override double ExecuteTyped(ExponentiationInput input, MeasurementContext? context)
     {
-        return PowerRecursive(input.BaseX, input.ExponentN, context);
+        int iterations = context != null ? 1 : 2000;
+        double result = 1.0;
+        for (int iter = 0; iter < iterations; iter++)
+        {
+            result = PowerRecursive(input.BaseX, input.ExponentN, context);
+        }
+        return result;
     }
 
     private static double PowerRecursive(double x, int n, MeasurementContext? context)

@@ -5,7 +5,7 @@ namespace AlgorithmPractice1.Core.Algorithms.Part4_Exponentiation;
 
 /// <summary>
 /// 14. Быстрое (бинарное) возведение в степень (сложность O(log n)).
-/// Измеряется количество операций умножения.
+/// Измеряется время выполнения (мс).
 /// </summary>
 public sealed class BinaryExponentiationAlgorithm : AlgorithmBase<ExponentiationInput, double>
 {
@@ -13,16 +13,16 @@ public sealed class BinaryExponentiationAlgorithm : AlgorithmBase<Exponentiation
 
     public override string Id => "BinaryExponentiation";
     public override string DisplayName => "Возведение в степень (бинарное)";
-    public override string Description => "Быстрое бинарное возведение в степень за логарифмическое число умножений (O(log n)).";
+    public override string Description => "Быстрое бинарное возведение в степень за логарифмическое время (O(log n)).";
     public override AlgorithmCategory Category => AlgorithmCategory.Exponentiation;
-    public override MeasurementType MeasurementType => MeasurementType.Steps;
+    public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Logarithmic;
 
     public override ExperimentConfig DefaultConfig => new()
     {
-        NMax = 1000,
-        NStep = 50,
-        RunsPerN = 1,
+        NMax = 150,
+        NStep = 25,
+        RunsPerN = 3,
         X = DefaultBase
     };
 
@@ -34,9 +34,17 @@ public sealed class BinaryExponentiationAlgorithm : AlgorithmBase<Exponentiation
 
     public override double ExecuteTyped(ExponentiationInput input, MeasurementContext? context)
     {
-        double x = input.BaseX;
-        long n = input.ExponentN;
+        int iterations = context != null ? 1 : 2000;
+        double result = 1.0;
+        for (int iter = 0; iter < iterations; iter++)
+        {
+            result = PowerBinary(input.BaseX, input.ExponentN, context);
+        }
+        return result;
+    }
 
+    private static double PowerBinary(double x, long n, MeasurementContext? context)
+    {
         if (n <= 0) return 1.0;
 
         double result = 1.0;
