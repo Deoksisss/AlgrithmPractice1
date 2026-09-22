@@ -74,7 +74,7 @@ public sealed class MillerRabinAlgorithm : AlgorithmBase<MillerRabinInput, bool>
 
         for (int i = 0; i < rounds; i++)
         {
-            BigInteger a = PollardRhoAlgorithm.NextBigInteger(2, n - 2, rng);
+            BigInteger a = RandomBase(n, rng);
 
             BigInteger x = BigInteger.ModPow(a, d, n);
             if (x == 1 || x == n - 1)
@@ -96,5 +96,13 @@ public sealed class MillerRabinAlgorithm : AlgorithmBase<MillerRabinInput, bool>
         }
 
         return true;
+    }
+
+    private static BigInteger RandomBase(BigInteger max, Random rng)
+    {
+        byte[] bytes = max.ToByteArray();
+        rng.NextBytes(bytes);
+        bytes[^1] &= 0x7F;
+        return (new BigInteger(bytes) % (max - 3)) + 2;
     }
 }

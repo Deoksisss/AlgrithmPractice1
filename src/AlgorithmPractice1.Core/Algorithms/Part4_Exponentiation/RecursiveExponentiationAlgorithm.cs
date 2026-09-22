@@ -48,6 +48,13 @@ public sealed class RecursiveExponentiationAlgorithm : AlgorithmBase<Exponentiat
         if (n <= 0) return 1.0;
         if (n == 1) return x;
 
+        if (n > 1000)
+        {
+            int half = n / 2;
+            context?.IncrementSteps();
+            return PowerRecursive(x, half, context) * PowerRecursive(x, n - half, context);
+        }
+
         context?.IncrementSteps();
         return x * PowerRecursive(x, n - 1, context);
     }

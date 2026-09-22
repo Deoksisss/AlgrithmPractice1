@@ -35,8 +35,7 @@ public sealed class TimSortAlgorithm : AlgorithmBase<int[], int[]>
 
     public override int[] ExecuteTyped(int[] input, MeasurementContext? context)
     {
-        var arr = (int[])input.Clone();
-        Array.Sort(arr);
-        return arr;
+        Array.Sort(input);
+        return input;
     }
 }

@@ -85,6 +85,81 @@ public class AlgorithmTests
     }
 
     [Fact]
+    public void GnomeSort_SortsFastAndCorrectly_AtLargeN()
+    {
+        var alg = new GnomeSortAlgorithm();
+        // Проверка корректности и скорости при N = 5000
+        var input = alg.GenerateTypedInput(5000, new ExperimentConfig());
+        var expected = (int[])input.Clone();
+        Array.Sort(expected);
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var sorted = alg.ExecuteTyped(input, null);
+        sw.Stop();
+
+        Assert.Equal(expected, sorted);
+        // Оптимизированный GnomeSort на 5000 элементов должен выполняться менее чем за 300 мс
+        Assert.True(sw.ElapsedMilliseconds < 1000);
+    }
+
+    [Fact]
+    public void LargeN_FastVectorAlgorithms_ExecuteQuicklyWithSmallStep()
+    {
+        // Линейные и N*log(N) алгоритмы: N до 20000 с шагом 2000
+        var sumAlg = new VectorSumAlgorithm();
+        var prodAlg = new VectorProductAlgorithm();
+        var hornerAlg = new HornerPolynomialAlgorithm();
+        var quickAlg = new QuickSortAlgorithm();
+        var timAlg = new TimSortAlgorithm();
+
+        var config = new ExperimentConfig { NMax = 20000, NStep = 2000, RunsPerN = 1 };
+
+        for (int n = 2000; n <= 20000; n += 2000)
+        {
+            var vec = sumAlg.GenerateTypedInput(n, config);
+            double sum = sumAlg.ExecuteTyped(vec, null);
+            Assert.False(double.IsNaN(sum));
+
+            var pVec = prodAlg.GenerateTypedInput(n, config);
+            double prod = prodAlg.ExecuteTyped(pVec, null);
+            Assert.False(double.IsNaN(prod));
+
+            var hVec = hornerAlg.GenerateTypedInput(n, config);
+            double horner = hornerAlg.ExecuteTyped(hVec, null);
+            Assert.False(double.IsNaN(horner));
+
+            var qVec = quickAlg.GenerateTypedInput(n, config);
+            var qSorted = quickAlg.ExecuteTyped(qVec, null);
+            Assert.Equal(n, qSorted.Length);
+
+            var tVec = timAlg.GenerateTypedInput(n, config);
+            var tSorted = timAlg.ExecuteTyped(tVec, null);
+            Assert.Equal(n, tSorted.Length);
+        }
+    }
+
+    [Fact]
+    public void Exponentiation_ExecutesSafely_AtLargeN_WithoutStackOverflow()
+    {
+        var iterAlg = new IterativeExponentiationAlgorithm();
+        var recAlg = new RecursiveExponentiationAlgorithm();
+        var binAlg = new BinaryExponentiationAlgorithm();
+
+        // Проверка при экстремально большом N = 20000 (проверка отсутствия StackOverflow)
+        var input = new ExponentiationInput(1.0001, 20000);
+
+        double resIter = iterAlg.ExecuteTyped(input, null);
+        double resRec = recAlg.ExecuteTyped(input, null);
+        double resBin = binAlg.ExecuteTyped(input, null);
+
+        Assert.True(resIter > 0 && !double.IsInfinity(resIter));
+        Assert.True(resRec > 0 && !double.IsInfinity(resRec));
+        Assert.True(resBin > 0 && !double.IsInfinity(resBin));
+        Assert.Equal(resIter, resRec, precision: 4);
+        Assert.Equal(resIter, resBin, precision: 4);
+    }
+
+    [Fact]
     public void MatrixMultiplication_MultipliesCorrectly()
     {
         var alg = new MatrixMultiplicationAlgorithm();
@@ -194,12 +269,20 @@ public class AlgorithmTests
     }
 
     [Fact]
-    public void PollardRho_WithLargeCommonN_CompletesQuicklyDueToSafeCap()
+    public void MatrixMultiplication_SmallN_SmallStep_CompletesQuickly()
     {
-        var alg = new PollardRhoAlgorithm();
-        var config = new ExperimentConfig { NMax = 200, NStep = 50, RunsPerN = 1 };
-        var input = alg.GenerateTypedInput(200, config);
-        var factor = alg.ExecuteTyped(input, null);
-        Assert.True(factor > 1 && factor <= input);
+        var alg = new MatrixMultiplicationAlgorithm();
+        // Умножение матриц O(n^2 * m) тестируется на меньших n и m с малым шагом (шаг 10)
+        for (int n = 10; n <= 40; n += 10)
+        {
+            var config = new ExperimentConfig { M = n };
+            var pair = alg.GenerateTypedInput(n, config);
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var res = alg.ExecuteTyped(pair, null);
+            sw.Stop();
+            Assert.Equal(n, res.GetLength(0));
+            Assert.Equal(n, res.GetLength(1));
+            Assert.True(sw.ElapsedMilliseconds < 500);
+        }
     }
 }

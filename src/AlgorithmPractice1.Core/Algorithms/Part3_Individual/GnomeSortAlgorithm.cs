@@ -35,23 +35,31 @@ public sealed class GnomeSortAlgorithm : AlgorithmBase<int[], int[]>
 
     public override int[] ExecuteTyped(int[] input, MeasurementContext? context)
     {
-        var arr = (int[])input.Clone();
-        int n = arr.Length;
-        int index = 0;
+        int i = 1;
+        int j = 2;
+        int n = input.Length;
 
-        while (index < n)
+        while (i < n)
         {
-            if (index == 0 || arr[index] >= arr[index - 1])
+            if (input[i - 1] <= input[i])
             {
-                index++;
+                i = j;
+                j++;
             }
             else
             {
-                (arr[index], arr[index - 1]) = (arr[index - 1], arr[index]);
-                index--;
+                int temp = input[i - 1];
+                input[i - 1] = input[i];
+                input[i] = temp;
+                i--;
+                if (i == 0)
+                {
+                    i = j;
+                    j++;
+                }
             }
         }
 
-        return arr;
+        return input;
     }
 }

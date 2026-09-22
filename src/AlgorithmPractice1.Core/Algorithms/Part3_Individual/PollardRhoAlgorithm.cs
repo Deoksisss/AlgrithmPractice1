@@ -89,25 +89,4 @@ public sealed class PollardRhoAlgorithm : AlgorithmBase<BigInteger, BigInteger>
         }
         return true;
     }
-
-    public static BigInteger NextBigInteger(BigInteger min, BigInteger max, Random rng)
-    {
-        if (min >= max) return min;
-        BigInteger range = max - min + 1;
-        if (range <= int.MaxValue)
-        {
-            return min + rng.Next((int)range);
-        }
-
-        byte[] bytes = range.ToByteArray();
-        BigInteger result;
-        do
-        {
-            rng.NextBytes(bytes);
-            bytes[^1] &= 0x7F;
-            result = new BigInteger(bytes);
-        } while (result >= range);
-
-        return min + result;
-    }
 }

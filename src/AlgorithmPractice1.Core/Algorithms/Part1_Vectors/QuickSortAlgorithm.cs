@@ -35,37 +35,35 @@ public sealed class QuickSortAlgorithm : AlgorithmBase<int[], int[]>
 
     public override int[] ExecuteTyped(int[] input, MeasurementContext? context)
     {
-        var arr = (int[])input.Clone();
-        if (arr.Length > 1)
+        if (input.Length > 1)
         {
-            Sort(arr, 0, arr.Length - 1);
+            Sort(input, 0, input.Length - 1);
         }
-        return arr;
+        return input;
     }
 
-    private static void Sort(int[] arr, int left, int right)
+    private static void Sort(int[] a, int left, int right)
     {
         if (left >= right) return;
 
-        int pivotIndex = Partition(arr, left, right);
-        Sort(arr, left, pivotIndex);
-        Sort(arr, pivotIndex + 1, right);
-    }
+        int pivot = a[left + (right - left) / 2];
+        int i = left, j = right;
 
-    private static int Partition(int[] arr, int left, int right)
-    {
-        int pivot = arr[left + (right - left) / 2];
-        int i = left - 1;
-        int j = right + 1;
-
-        while (true)
+        while (i <= j)
         {
-            do { i++; } while (arr[i] < pivot);
-            do { j--; } while (arr[j] > pivot);
-
-            if (i >= j) return j;
-
-            (arr[i], arr[j]) = (arr[j], arr[i]);
+            while (a[i] < pivot) i++;
+            while (a[j] > pivot) j--;
+            if (i <= j)
+            {
+                int temp = a[i];
+                a[i] = a[j];
+                a[j] = temp;
+                i++;
+                j--;
+            }
         }
+
+        Sort(a, left, j);
+        Sort(a, i, right);
     }
 }
