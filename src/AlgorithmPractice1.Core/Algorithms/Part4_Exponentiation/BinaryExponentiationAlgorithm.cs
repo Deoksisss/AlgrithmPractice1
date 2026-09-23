@@ -4,7 +4,7 @@ using AlgorithmPractice1.Core.Models;
 namespace AlgorithmPractice1.Core.Algorithms.Part4_Exponentiation;
 
 /// <summary>
-/// 14. Быстрое (бинарное) возведение в степень (сложность O(log n)).
+/// 14. Быстрое бинарное рекурсивное возведение в степень (сложность O(log n)).
 /// Измеряется время выполнения (мс).
 /// </summary>
 public sealed class BinaryExponentiationAlgorithm : AlgorithmBase<ExponentiationInput, double>
@@ -13,7 +13,7 @@ public sealed class BinaryExponentiationAlgorithm : AlgorithmBase<Exponentiation
 
     public override string Id => "BinaryExponentiation";
     public override string DisplayName => "Возведение в степень (бинарное)";
-    public override string Description => "Быстрое бинарное возведение в степень за логарифмическое время (O(log n)).";
+    public override string Description => "Быстрое бинарное рекурсивное возведение в степень за логарифмическое время (O(log n)), память O(log n).";
     public override AlgorithmCategory Category => AlgorithmCategory.Exponentiation;
     public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Logarithmic;
@@ -43,29 +43,21 @@ public sealed class BinaryExponentiationAlgorithm : AlgorithmBase<Exponentiation
         return result;
     }
 
-    private static double PowerBinary(double x, long n, MeasurementContext? context)
+    public static double PowerBinary(double x, long n, MeasurementContext? context)
     {
         if (n <= 0) return 1.0;
+        if (n == 1) return x;
 
-        double result = 1.0;
-        double currentBase = x;
-
-        while (n > 0)
+        if ((n & 1) == 1)
         {
-            if ((n & 1) == 1)
-            {
-                result *= currentBase;
-                context?.IncrementSteps();
-            }
-
-            n >>= 1;
-            if (n > 0)
-            {
-                currentBase *= currentBase;
-                context?.IncrementSteps();
-            }
+            context?.IncrementSteps();
+            return x * PowerBinary(x, n - 1, context);
         }
-
-        return result;
+        else
+        {
+            context?.IncrementSteps();
+            double half = PowerBinary(x, n >> 1, context);
+            return half * half;
+        }
     }
 }

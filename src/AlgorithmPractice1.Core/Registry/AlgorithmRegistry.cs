@@ -40,6 +40,7 @@ public sealed class AlgorithmRegistry
         Register(new IterativeExponentiationAlgorithm());
         Register(new RecursiveExponentiationAlgorithm());
         Register(new BinaryExponentiationAlgorithm());
+        Register(new ClassicalExponentiationAlgorithm());
     }
 
     private void Register(IAlgorithm algorithm)

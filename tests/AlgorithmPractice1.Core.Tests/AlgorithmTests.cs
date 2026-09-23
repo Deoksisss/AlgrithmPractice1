@@ -5,6 +5,7 @@ using AlgorithmPractice1.Core.Algorithms.Part3_Individual;
 using AlgorithmPractice1.Core.Algorithms.Part4_Exponentiation;
 using AlgorithmPractice1.Core.Approximation;
 using AlgorithmPractice1.Core.Models;
+using AlgorithmPractice1.Core.Registry;
 using Xunit;
 
 namespace AlgorithmPractice1.Core.Tests;
@@ -144,6 +145,7 @@ public class AlgorithmTests
         var iterAlg = new IterativeExponentiationAlgorithm();
         var recAlg = new RecursiveExponentiationAlgorithm();
         var binAlg = new BinaryExponentiationAlgorithm();
+        var classicAlg = new ClassicalExponentiationAlgorithm();
 
         // Проверка при экстремально большом N = 20000 (проверка отсутствия StackOverflow)
         var input = new ExponentiationInput(1.0001, 20000);
@@ -151,12 +153,15 @@ public class AlgorithmTests
         double resIter = iterAlg.ExecuteTyped(input, null);
         double resRec = recAlg.ExecuteTyped(input, null);
         double resBin = binAlg.ExecuteTyped(input, null);
+        double resClassic = classicAlg.ExecuteTyped(input, null);
 
         Assert.True(resIter > 0 && !double.IsInfinity(resIter));
         Assert.True(resRec > 0 && !double.IsInfinity(resRec));
         Assert.True(resBin > 0 && !double.IsInfinity(resBin));
+        Assert.True(resClassic > 0 && !double.IsInfinity(resClassic));
         Assert.Equal(resIter, resRec, precision: 4);
         Assert.Equal(resIter, resBin, precision: 4);
+        Assert.Equal(resIter, resClassic, precision: 4);
     }
 
     [Fact]
@@ -248,6 +253,7 @@ public class AlgorithmTests
         var iterAlg = new IterativeExponentiationAlgorithm();
         var recAlg = new RecursiveExponentiationAlgorithm();
         var binAlg = new BinaryExponentiationAlgorithm();
+        var classicAlg = new ClassicalExponentiationAlgorithm();
 
         var input = new ExponentiationInput(2.0, 10); // 2^10 = 1024
 
@@ -264,8 +270,49 @@ public class AlgorithmTests
         var ctxBin = new MeasurementContext();
         double resBin = binAlg.ExecuteTyped(input, ctxBin);
         Assert.Equal(1024.0, resBin);
-        // Бинарное: 10 = 1010_2. Гораздо меньше умножений!
+        // Бинарное рекурсивное: 10 = 1010_2. Гораздо меньше умножений!
         Assert.True(ctxBin.StepCount <= 6);
+
+        var ctxClassic = new MeasurementContext();
+        double resClassic = classicAlg.ExecuteTyped(input, ctxClassic);
+        Assert.Equal(1024.0, resClassic);
+        // Классическое битовое: 10 = 1010_2. 4 сдвига, 2 бита 1.
+        Assert.True(ctxClassic.StepCount <= 6);
+    }
+
+    [Fact]
+    public void FourExponentiationAlgorithms_RegisteredAndAccurate()
+    {
+        var expAlgs = AlgorithmRegistry.Instance.GetByCategory(AlgorithmCategory.Exponentiation).ToList();
+        Assert.Equal(4, expAlgs.Count);
+
+        var ids = expAlgs.Select(a => a.Id).ToHashSet();
+        Assert.Contains("IterativeExponentiation", ids);
+        Assert.Contains("RecursiveExponentiation", ids);
+        Assert.Contains("BinaryExponentiation", ids);
+        Assert.Contains("ClassicalExponentiation", ids);
+
+        // Проверяем краевые случаи (x^0 = 1, x^1 = x, 3^5 = 243)
+        foreach (var alg in expAlgs)
+        {
+            var config = new ExperimentConfig();
+            var input0 = new ExponentiationInput(5.0, 0);
+            var input1 = new ExponentiationInput(5.0, 1);
+            var input5 = new ExponentiationInput(3.0, 5);
+
+            Assert.Equal(1.0, (double)alg.Execute(input0, null)!);
+            Assert.Equal(5.0, (double)alg.Execute(input1, null)!);
+            Assert.Equal(243.0, (double)alg.Execute(input5, null)!);
+        }
+
+        // Классический алгоритм на N = 100000 выполняется мгновенно и безопасно (память O(1), без стека)
+        var classic = new ClassicalExponentiationAlgorithm();
+        var largeInput = new ExponentiationInput(1.00001, 100000);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        double res = classic.ExecuteTyped(largeInput, null);
+        sw.Stop();
+        Assert.True(res > 1.0);
+        Assert.True(sw.ElapsedMilliseconds < 50);
     }
 
     [Fact]
