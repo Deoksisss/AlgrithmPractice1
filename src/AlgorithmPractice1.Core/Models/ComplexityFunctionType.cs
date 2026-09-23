@@ -33,7 +33,12 @@ public enum ComplexityFunctionType
     /// <summary>
     /// f(n) = log2(n) (O(log n))
     /// </summary>
-    Logarithmic
+    Logarithmic,
+
+    /// <summary>
+    /// f(n, m) = n^2 * m (O(n²·m), 3D матричное умножение)
+    /// </summary>
+    Matrix3D
 }
 
 public static class ComplexityFunctionExtensions
@@ -46,6 +51,7 @@ public static class ComplexityFunctionExtensions
         ComplexityFunctionType.Quadratic => "n2",
         ComplexityFunctionType.Cubic => "n3",
         ComplexityFunctionType.Logarithmic => "log_n",
+        ComplexityFunctionType.Matrix3D => "n2_m",
         _ => "n"
     };
 
@@ -57,6 +63,7 @@ public static class ComplexityFunctionExtensions
         "n2" => ComplexityFunctionType.Quadratic,
         "n3" => ComplexityFunctionType.Cubic,
         "log_n" => ComplexityFunctionType.Logarithmic,
+        "n2_m" => ComplexityFunctionType.Matrix3D,
         _ => ComplexityFunctionType.Linear
     };
 
@@ -68,6 +75,7 @@ public static class ComplexityFunctionExtensions
         ComplexityFunctionType.Quadratic => "O(n²)",
         ComplexityFunctionType.Cubic => "O(n³)",
         ComplexityFunctionType.Logarithmic => "O(log n)",
+        ComplexityFunctionType.Matrix3D => "O(n²·m)",
         _ => "O(n)"
     };
 }

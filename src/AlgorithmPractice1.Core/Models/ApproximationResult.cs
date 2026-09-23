@@ -26,7 +26,9 @@ public record ApproximationResult
     /// <summary>
     /// Человекочитаемая легенда для графика с форматированным MSE.
     /// </summary>
-    public string LegendLabel => $"Аппроксимация (MSE: {FormatMse(Mse)})";
+    public string LegendLabel => FunctionType == "n2_m"
+        ? $"Аппроксимация O(n²·m) (MSE: {FormatMse(Mse)})"
+        : $"Аппроксимация (MSE: {FormatMse(Mse)})";
 
     public static string FormatMse(double mse)
     {

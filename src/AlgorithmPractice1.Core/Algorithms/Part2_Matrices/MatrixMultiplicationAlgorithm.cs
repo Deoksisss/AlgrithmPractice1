@@ -19,7 +19,7 @@ public sealed class MatrixMultiplicationAlgorithm : AlgorithmBase<MatrixPair, do
     public override string Description => "Классическое умножение прямоугольных матриц (O(n²·m)). Варьируются оба размера n и m. Результат отображается на 3D графике (n, m, время).";
     public override AlgorithmCategory Category => AlgorithmCategory.Matrices;
     public override MeasurementType MeasurementType => MeasurementType.Time;
-    public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Quadratic;
+    public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Matrix3D;
 
     public override ExperimentConfig DefaultConfig => new()
     {

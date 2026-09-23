@@ -19,6 +19,17 @@ public static class ChartBuilderService
         "#5D4037"  // Коричневый
     };
 
+    private static readonly string[] ApproxPalette =
+    {
+        "#FF8F00", // Янтарный (основной цвет аппроксимации)
+        "#FFB300", // Светло-янтарный
+        "#00C853", // Светло-зеленый
+        "#E040FB", // Светло-фиолетовый
+        "#00E5FF", // Светло-бирюзовый
+        "#FF4081", // Светло-малиновый
+        "#FF6E40"  // Коралловый
+    };
+
     public static ChartDisplayModel BuildSingleAlgorithmChart(SessionAlgorithm sa, string algorithmDisplayName)
     {
         bool isMatrix = sa.AlgorithmId == "MatrixMultiply";
@@ -112,6 +123,7 @@ public static class ChartBuilderService
     public static ChartDisplayModel BuildMatrix3DChart(IReadOnlyList<SessionAlgorithm> matrixAlgorithms, string algorithmDisplayName)
     {
         var surfaceSeriesList = new List<Chart3DSeries>();
+        string? singleSubtitle = null;
 
         for (int idx = 0; idx < matrixAlgorithms.Count; idx++)
         {
@@ -120,9 +132,11 @@ public static class ChartBuilderService
             if (measurements.Count == 0) continue;
 
             string colorHex = Palette[idx % Palette.Length];
-            string seriesName = matrixAlgorithms.Count > 1
-                ? $"Сессия #{sa.SessionId} (A: n×m × B: m×n)"
-                : "Поверхность времени матричного умножения";
+            string approxColorHex = ApproxPalette[idx % ApproxPalette.Length];
+
+            string empiricalSeriesName = matrixAlgorithms.Count > 1
+                ? $"[Сессия #{sa.SessionId}] Замеры"
+                : "Эмпирические замеры (время, мс)";
 
             // Группируем по N и M
             var distinctN = measurements.Select(m => (double)m.N).Distinct().OrderBy(v => v).ToArray();
@@ -181,14 +195,65 @@ public static class ChartBuilderService
                 };
             }
 
+            // Добавляем эмпирическую поверхность (SolidWithWireframe)
             surfaceSeriesList.Add(new Chart3DSeries
             {
-                Name = seriesName,
+                Name = empiricalSeriesName,
                 Data = surfaceData,
                 ColorHex = colorHex,
                 Style = SurfaceStyle.SolidWithWireframe,
-                Opacity = 0.85
+                Opacity = 0.75
             });
+
+            // Получаем или вычисляем аппроксимацию O(n²·m)
+            var approx = sa.Approximation;
+            if (approx == null && measurements.Count > 1)
+            {
+                var pts = measurements
+                    .Select(m => ((double)m.N, (double)m.M.GetValueOrDefault(50), m.ElapsedMilliseconds.GetValueOrDefault(0.0)))
+                    .ToList();
+                approx = LeastSquaresSolver.FitMatrix3D(pts, sa.Id);
+            }
+
+            if (approx != null)
+            {
+                var xVals = surfaceData.XValues;
+                var yVals = surfaceData.YValues;
+                double[,] zApprox = new double[xVals.Length, yVals.Length];
+
+                for (int i = 0; i < xVals.Length; i++)
+                {
+                    double n = xVals[i];
+                    for (int j = 0; j < yVals.Length; j++)
+                    {
+                        double m = yVals[j];
+                        zApprox[i, j] = approx.Coefficient * (n * n * m);
+                    }
+                }
+
+                string approxSeriesName = matrixAlgorithms.Count > 1
+                    ? $"[Сессия #{sa.SessionId}] {approx.LegendLabel}"
+                    : approx.LegendLabel;
+
+                surfaceSeriesList.Add(new Chart3DSeries
+                {
+                    Name = approxSeriesName,
+                    Data = new SurfaceData
+                    {
+                        XValues = xVals,
+                        YValues = yVals,
+                        Z = zApprox
+                    },
+                    ColorHex = approxColorHex,
+                    Style = SurfaceStyle.Wireframe,
+                    Opacity = 0.95
+                });
+
+                if (matrixAlgorithms.Count == 1)
+                {
+                    singleSubtitle = $"МНК: {approx.LegendLabel} | C = {approx.Coefficient:E3}";
+                }
+            }
         }
 
         var chartParams = new Chart3DParams
@@ -199,10 +264,14 @@ public static class ChartBuilderService
             ZLabel = "Время (мс)"
         };
 
+        string subtitle = matrixAlgorithms.Count > 1
+            ? $"Сравнение матричного умножения по {matrixAlgorithms.Count} сессиям (3D)"
+            : (singleSubtitle ?? "3D график зависимости времени от N и M (A: n×m, B: m×n)");
+
         return new ChartDisplayModel
         {
             Title = algorithmDisplayName,
-            Subtitle = "3D график зависимости времени от N и M (A: n×m, B: m×n)",
+            Subtitle = subtitle,
             AlgorithmId = "MatrixMultiply",
             Is3D = true,
             Series3D = surfaceSeriesList,

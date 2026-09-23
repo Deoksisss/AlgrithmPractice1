@@ -314,6 +314,22 @@ public sealed class ExperimentRunner
         long sessionAlgorithmId,
         IReadOnlyList<MeasurementPoint> points)
     {
+        if (algorithm.Category == AlgorithmCategory.Matrices || algorithm.TheoreticalComplexity == ComplexityFunctionType.Matrix3D)
+        {
+            var matrixPoints = points
+                .GroupBy(p => (p.N, M: p.M.GetValueOrDefault(p.N)))
+                .Select(g => (
+                    N: (double)g.Key.N,
+                    M: (double)g.Key.M,
+                    EmpiricalValue: algorithm.MeasurementType == MeasurementType.Time
+                        ? g.Average(p => p.ElapsedMilliseconds.GetValueOrDefault(0.0))
+                        : g.Average(p => (double)p.StepCount.GetValueOrDefault(0))
+                ))
+                .ToList();
+
+            return LeastSquaresSolver.FitMatrix3D(matrixPoints, sessionAlgorithmId);
+        }
+
         // Усредняем эмпирические значения для каждого N
         var groupedPoints = points
             .GroupBy(p => p.N)
