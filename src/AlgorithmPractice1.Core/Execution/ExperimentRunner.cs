@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using AlgorithmPractice1.Core.Abstractions;
+using AlgorithmPractice1.Core.Algorithms.Part3_Individual;
 using AlgorithmPractice1.Core.Approximation;
 using AlgorithmPractice1.Core.Data;
 using AlgorithmPractice1.Core.Models;
@@ -225,11 +226,27 @@ public sealed class ExperimentRunner
             else
             {
                 // Одномерные алгоритмы по N
+                int totalPoints = (nMax - step) / step + 1;
+                int completedPoints = 0;
+
                 for (int n = step; n <= nMax; n += step)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    item.CurrentN = n;
+                    completedPoints++;
+                    item.CurrentN = completedPoints;
+
+                    if (alg.Id == "MillerRabin")
+                    {
+                        int k = config.K.GetValueOrDefault(MillerRabinAlgorithm.DefaultRounds);
+                        if (k <= 0) k = MillerRabinAlgorithm.DefaultRounds;
+                        item.Details = $"N = {n}, K = {k} ({completedPoints}/{totalPoints})";
+                    }
+                    else
+                    {
+                        item.Details = $"N = {n} ({completedPoints}/{totalPoints})";
+                    }
+
                     ReportProgress(alg.Id);
 
                     // Прогрев перед серией запусков для режима Time
