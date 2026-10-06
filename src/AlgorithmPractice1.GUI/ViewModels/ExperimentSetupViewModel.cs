@@ -22,9 +22,6 @@ public partial class ExperimentSetupViewModel : ViewModelBase
     private string _sessionLabel = string.Empty;
 
     [ObservableProperty]
-    private AlgorithmSelectionItem? _selectedIndividualAlgorithm;
-
-    [ObservableProperty]
     private string _errorMessage = string.Empty;
 
     [ObservableProperty]
@@ -41,17 +38,10 @@ public partial class ExperimentSetupViewModel : ViewModelBase
     private int _commonRunsPerN = 3;
 
     [ObservableProperty]
-    private int _commonK = 20;
-
-    [ObservableProperty]
     private double _commonX = 1.5;
 
     [ObservableProperty]
     private bool _commonForceRecalculate = false;
-
-    // Флаг использования индивидуальных настроек вместо общих
-    [ObservableProperty]
-    private bool _useIndividualSettings = false;
 
     public event Action<IReadOnlyList<ExperimentRequest>, string?>? StartExperimentRequested;
 
@@ -85,11 +75,6 @@ public partial class ExperimentSetupViewModel : ViewModelBase
                     ExponentiationAlgorithms.Add(item);
                     break;
             }
-        }
-
-        if (Algorithms.Count > 0)
-        {
-            SelectedIndividualAlgorithm = Algorithms[0];
         }
 
         UpdateSelectedCountText();
@@ -129,15 +114,6 @@ public partial class ExperimentSetupViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ResetDefaults()
-    {
-        if (SelectedIndividualAlgorithm != null)
-        {
-            SelectedIndividualAlgorithm.ResetToDefaults();
-        }
-    }
-
-    [RelayCommand]
     private void ResetAllDefaults()
     {
         foreach (var item in Algorithms)
@@ -162,15 +138,12 @@ public partial class ExperimentSetupViewModel : ViewModelBase
                 item.MStep = CommonNStep;
             }
 
-            if (item.HasK)
-            {
-                item.K = CommonK;
-            }
-
             if (item.HasX)
             {
                 item.X = CommonX;
             }
+
+            item.UseCustomSettings = false;
         }
     }
 
@@ -180,7 +153,6 @@ public partial class ExperimentSetupViewModel : ViewModelBase
         CommonNMax = 150;
         CommonNStep = 25;
         CommonRunsPerN = 3;
-        CommonK = 20;
         CommonX = 1.5;
         CommonForceRecalculate = false;
     }
@@ -197,33 +169,13 @@ public partial class ExperimentSetupViewModel : ViewModelBase
             return;
         }
 
-        List<ExperimentRequest> requests;
-        if (!UseIndividualSettings)
-        {
-            int nMax = Math.Max(1, CommonNMax);
-            int nStep = Math.Max(1, CommonNStep);
-            int runs = Math.Max(1, CommonRunsPerN);
+        int nMax = Math.Max(1, CommonNMax);
+        int nStep = Math.Max(1, CommonNStep);
+        int runs = Math.Max(1, CommonRunsPerN);
 
-            requests = selected.Select(s =>
-            {
-                var config = new ExperimentConfig
-                {
-                    NMax = nMax,
-                    NStep = nStep,
-                    RunsPerN = runs,
-                    M = s.HasM ? nMax : null,
-                    MStep = s.HasM ? nStep : null,
-                    K = s.HasK ? CommonK : null,
-                    X = s.HasX ? CommonX : null,
-                    ForceRecalculate = CommonForceRecalculate
-                };
-                return new ExperimentRequest(s.Algorithm, config);
-            }).ToList();
-        }
-        else
-        {
-            requests = selected.Select(s => new ExperimentRequest(s.Algorithm, s.ToConfig())).ToList();
-        }
+        var requests = selected
+            .Select(s => new ExperimentRequest(s.Algorithm, s.ToEffectiveConfig(nMax, nStep, runs, CommonX, CommonForceRecalculate)))
+            .ToList();
 
         string? label = string.IsNullOrWhiteSpace(SessionLabel) ? null : SessionLabel.Trim();
         StartExperimentRequested?.Invoke(requests, label);

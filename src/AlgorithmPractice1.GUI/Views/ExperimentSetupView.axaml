@@ -5,6 +5,194 @@
              x:Class="AlgorithmPractice1.GUI.Views.ExperimentSetupView"
              x:DataType="vm:ExperimentSetupViewModel">
 
+    <UserControl.Resources>
+        <!-- Единый шаблон элемента алгоритма с разворачиваемой стрелкой индивидуальных настроек -->
+        <DataTemplate x:Key="AlgorithmItemTemplate" x:DataType="models:AlgorithmSelectionItem">
+            <Border Background="White"
+                    BorderBrush="#E1E4E8"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Margin="0,2"
+                    Padding="6,4">
+                <StackPanel Spacing="4">
+                    <!-- Заголовок элемента: Чекбокс, Название, Метка кастомизации, Сложность, Стрелка -->
+                    <Grid ColumnDefinitions="Auto, *, Auto, Auto, Auto">
+                        <CheckBox Grid.Column="0"
+                                  IsChecked="{Binding IsSelected}"
+                                  Margin="0,0,6,0"
+                                  VerticalAlignment="Center" />
+
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Algorithm.DisplayName}"
+                                   FontSize="12"
+                                   FontWeight="Medium"
+                                   Foreground="#1F2328"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <!-- Бейдж кастомных настроек -->
+                        <Border Grid.Column="2"
+                                Background="#FFF8C5"
+                                BorderBrush="#D4A72C"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                Padding="4,1"
+                                Margin="4,0"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding UseCustomSettings}">
+                            <TextBlock Text="Кастомные"
+                                       FontSize="9"
+                                       FontWeight="SemiBold"
+                                       Foreground="#9A6700" />
+                        </Border>
+
+                        <!-- Бейдж сложности -->
+                        <Border Grid.Column="3"
+                                Background="#E1E4E8"
+                                CornerRadius="3"
+                                Padding="4,1"
+                                Margin="4,0"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ComplexityDisplayName}"
+                                       FontSize="10"
+                                       Foreground="#57606A" />
+                        </Border>
+
+                        <!-- Разворачиваемая стрелка -->
+                        <ToggleButton Grid.Column="4"
+                                      Classes="expanderToggle"
+                                      IsChecked="{Binding IsExpanded}"
+                                      VerticalAlignment="Center"
+                                      Cursor="Hand"
+                                      ToolTip.Tip="Индивидуальные настройки алгоритма">
+                            <Panel>
+                                <TextBlock Text="▼" FontSize="10" Foreground="#57606A" IsVisible="{Binding !IsExpanded}" />
+                                <TextBlock Text="▲" FontSize="10" Foreground="#0969DA" IsVisible="{Binding IsExpanded}" />
+                            </Panel>
+                        </ToggleButton>
+                    </Grid>
+
+                    <!-- Выпадающая панель индивидуальных настроек -->
+                    <Border IsVisible="{Binding IsExpanded}"
+                            Background="#F6F8FA"
+                            BorderBrush="#D0D7DE"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Margin="0,4,0,2"
+                            Padding="10">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="⚙️ Индивидуальные параметры алгоритма"
+                                       FontWeight="Bold"
+                                       FontSize="12"
+                                       Foreground="#1F2328" />
+
+                            <!-- Специфический параметр K для Миллера-Рабина -->
+                            <StackPanel Spacing="4" IsVisible="{Binding HasK}">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="Число раундов K (тест Миллера-Рабина):"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="11"
+                                                   Foreground="#1F2328" />
+                                        <TextBlock Text="Вероятность ошибки не более 4^(-k). Настраивается индивидуально."
+                                                   FontSize="10"
+                                                   Foreground="#656D76" />
+                                    </StackPanel>
+                                    <NumericUpDown Grid.Column="1"
+                                                   Value="{Binding K}"
+                                                   Minimum="1"
+                                                   Maximum="200"
+                                                   FormatString="F0"
+                                                   Width="90"
+                                                   Height="28" />
+                                </Grid>
+                                <Separator Height="1" Background="#E1E4E8" Margin="0,4" />
+                            </StackPanel>
+
+                            <!-- Переключатель использования индивидуальных NMax/шага/повторов -->
+                            <CheckBox IsChecked="{Binding UseCustomSettings}"
+                                      Content="Использовать индивидуальные NMax, шаг и повторы"
+                                      FontSize="11"
+                                      FontWeight="SemiBold" />
+
+                            <!-- Если индивидуальные параметры включены -->
+                            <StackPanel IsVisible="{Binding UseCustomSettings}" Spacing="6">
+                                <Grid ColumnDefinitions="*, *, *">
+                                    <StackPanel Grid.Column="0" Spacing="2" Margin="0,0,6,0">
+                                        <TextBlock Text="Макс. N:" FontSize="11" FontWeight="Medium" />
+                                        <NumericUpDown Value="{Binding NMax}" Minimum="1" Maximum="2000000" FormatString="F0" Height="28" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="2" Margin="0,0,6,0">
+                                        <TextBlock Text="Шаг по N:" FontSize="11" FontWeight="Medium" />
+                                        <NumericUpDown Value="{Binding NStep}" Minimum="1" Maximum="500000" FormatString="F0" Height="28" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Spacing="2">
+                                        <TextBlock Text="Повторов:" FontSize="11" FontWeight="Medium" />
+                                        <NumericUpDown Value="{Binding RunsPerN}" Minimum="1" Maximum="50" FormatString="F0" Height="28" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Если это матричное умножение -->
+                                <Border Background="#F0F8FF"
+                                        BorderBrush="#B6E3FF"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="6,4"
+                                        IsVisible="{Binding HasM}">
+                                    <TextBlock Text="ℹ️ Размеры матрицы: N и M синхронизированы (M = NMax, MStep = NStep)."
+                                               FontSize="10"
+                                               Foreground="#0969DA" />
+                                </Border>
+
+                                <!-- Если это полином или степень -->
+                                <Grid ColumnDefinitions="*, Auto" IsVisible="{Binding HasX}">
+                                    <TextBlock Grid.Column="0" Text="Основание / аргумент X:" FontSize="11" VerticalAlignment="Center" />
+                                    <NumericUpDown Grid.Column="1" Value="{Binding X}" Increment="0.1" FormatString="F2" Width="90" Height="28" />
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*, Auto" Margin="0,4,0,0">
+                                    <CheckBox Grid.Column="0"
+                                              IsChecked="{Binding ForceRecalculate}"
+                                              Content="Принудительный пересчёт (без кэша БД)"
+                                              FontSize="11"
+                                              VerticalAlignment="Center" />
+                                    <Button Grid.Column="1"
+                                            Content="↺ К рекомендованным"
+                                            Command="{Binding ResetDefaultsCommand}"
+                                            FontSize="10"
+                                            Padding="6,3" />
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Подсказка, когда индивидуальные выключены -->
+                            <TextBlock IsVisible="{Binding !UseCustomSettings}"
+                                       Text="Сейчас для NMax, шага и повторов действуют общие параметры сверху."
+                                       FontSize="10"
+                                       Foreground="#656D76"
+                                       FontStyle="Italic"
+                                       Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <UserControl.Styles>
+        <Style Selector="ToggleButton.expanderToggle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+        <Style Selector="ToggleButton.expanderToggle:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#EAEEF2" />
+        </Style>
+        <Style Selector="ToggleButton.expanderToggle:checked /template/ ContentPresenter">
+            <Setter Property="Background" Value="#DDF4FF" />
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="16" Spacing="14">
 
@@ -35,8 +223,8 @@
 
                     <Separator Height="1" Background="#E1E4E8" />
 
-                    <!-- Сетка полей ввода основных параметров -->
-                    <Grid ColumnDefinitions="*, *, *, *, *">
+                    <!-- Сетка полей ввода основных параметров (4 колонки) -->
+                    <Grid ColumnDefinitions="*, *, *, *">
                         <!-- NMax -->
                         <StackPanel Grid.Column="0" Spacing="4" Margin="0,0,10,0">
                             <TextBlock Text="Максимальный N:" FontWeight="SemiBold" FontSize="12" Foreground="#1F2328" />
@@ -67,18 +255,8 @@
                             <TextBlock Text="Для усреднения времени" FontSize="10" Foreground="#656D76" />
                         </StackPanel>
 
-                        <!-- CommonK -->
-                        <StackPanel Grid.Column="3" Spacing="4" Margin="0,0,10,0">
-                            <TextBlock Text="Раундов K (Миллер-Рабин):" FontWeight="SemiBold" FontSize="12" Foreground="#1F2328" />
-                            <NumericUpDown Value="{Binding CommonK}"
-                                           Minimum="1"
-                                           Maximum="200"
-                                           FormatString="F0" />
-                            <TextBlock Text="Число раундов теста" FontSize="10" Foreground="#656D76" />
-                        </StackPanel>
-
                         <!-- CommonX -->
-                        <StackPanel Grid.Column="4" Spacing="4">
+                        <StackPanel Grid.Column="3" Spacing="4">
                             <TextBlock Text="Основание X (степень/полином):" FontWeight="SemiBold" FontSize="12" Foreground="#1F2328" />
                             <NumericUpDown Value="{Binding CommonX}"
                                            Increment="0.1"
@@ -105,7 +283,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- 2. Выбор алгоритмов (Компактный 2-колоночный интерфейс) -->
+            <!-- 2. Выбор алгоритмов (Компактный 2-колоночный интерфейс с разворачиваемыми стрелками) -->
             <Border Background="White"
                     BorderBrush="#D0D7DE"
                     BorderThickness="1"
@@ -164,7 +342,7 @@
 
                     <!-- 2-колоночная сетка категорий -->
                     <Grid ColumnDefinitions="*, *">
-                        <!-- Левая колонка: Векторы (8 алгоритмов) -->
+                        <!-- Левая колонка: Векторы -->
                         <Border Grid.Column="0"
                                 Background="#F6F8FA"
                                 BorderBrush="#D0D7DE"
@@ -179,32 +357,8 @@
                                            Foreground="#0969DA"
                                            Margin="0,0,0,4" />
 
-                                <ItemsControl ItemsSource="{Binding VectorAlgorithms}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="models:AlgorithmSelectionItem">
-                                            <CheckBox IsChecked="{Binding IsSelected}"
-                                                      Margin="0,3"
-                                                      HorizontalAlignment="Stretch">
-                                                <Grid ColumnDefinitions="*, Auto">
-                                                    <TextBlock Grid.Column="0"
-                                                               Text="{Binding Algorithm.DisplayName}"
-                                                               FontSize="12"
-                                                               VerticalAlignment="Center" />
-                                                    <Border Grid.Column="1"
-                                                            Background="#E1E4E8"
-                                                            CornerRadius="3"
-                                                            Padding="4,1"
-                                                            Margin="8,0,0,0"
-                                                            VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding ComplexityDisplayName}"
-                                                                   FontSize="10"
-                                                                   Foreground="#57606A" />
-                                                    </Border>
-                                                </Grid>
-                                            </CheckBox>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <ItemsControl ItemsSource="{Binding VectorAlgorithms}"
+                                              ItemTemplate="{StaticResource AlgorithmItemTemplate}" />
                             </StackPanel>
                         </Border>
 
@@ -222,34 +376,12 @@
                                                FontSize="12"
                                                Foreground="#BF8700" />
 
-                                    <ItemsControl ItemsSource="{Binding MatrixAlgorithms}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="models:AlgorithmSelectionItem">
-                                                <CheckBox IsChecked="{Binding IsSelected}" Margin="0,2">
-                                                    <Grid ColumnDefinitions="*, Auto">
-                                                        <TextBlock Grid.Column="0"
-                                                                   Text="{Binding Algorithm.DisplayName}"
-                                                                   FontSize="12"
-                                                                   VerticalAlignment="Center" />
-                                                        <Border Grid.Column="1"
-                                                                Background="#E1E4E8"
-                                                                CornerRadius="3"
-                                                                Padding="4,1"
-                                                                Margin="8,0,0,0"
-                                                                VerticalAlignment="Center">
-                                                            <TextBlock Text="3D, O(n²·m)"
-                                                                       FontSize="10"
-                                                                       Foreground="#57606A" />
-                                                        </Border>
-                                                    </Grid>
-                                                </CheckBox>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <ItemsControl ItemsSource="{Binding MatrixAlgorithms}"
+                                                  ItemTemplate="{StaticResource AlgorithmItemTemplate}" />
                                 </StackPanel>
                             </Border>
 
-                            <!-- Индивидуальные -->
+                            <!-- Индивидуальные алгоритмы -->
                             <Border Background="#F6F8FA"
                                     BorderBrush="#D0D7DE"
                                     BorderThickness="1"
@@ -261,36 +393,12 @@
                                                FontSize="12"
                                                Foreground="#8250DF" />
 
-                                    <ItemsControl ItemsSource="{Binding IndividualAlgorithms}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="models:AlgorithmSelectionItem">
-                                                <CheckBox IsChecked="{Binding IsSelected}"
-                                                          Margin="0,2"
-                                                          HorizontalAlignment="Stretch">
-                                                    <Grid ColumnDefinitions="*, Auto">
-                                                        <TextBlock Grid.Column="0"
-                                                                   Text="{Binding Algorithm.DisplayName}"
-                                                                   FontSize="12"
-                                                                   VerticalAlignment="Center" />
-                                                        <Border Grid.Column="1"
-                                                                Background="#E1E4E8"
-                                                                CornerRadius="3"
-                                                                Padding="4,1"
-                                                                Margin="8,0,0,0"
-                                                                VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding ComplexityDisplayName}"
-                                                                       FontSize="10"
-                                                                       Foreground="#57606A" />
-                                                        </Border>
-                                                    </Grid>
-                                                </CheckBox>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <ItemsControl ItemsSource="{Binding IndividualAlgorithms}"
+                                                  ItemTemplate="{StaticResource AlgorithmItemTemplate}" />
                                 </StackPanel>
                             </Border>
 
-                            <!-- Степени -->
+                            <!-- Возведение в степень -->
                             <Border Background="#F6F8FA"
                                     BorderBrush="#D0D7DE"
                                     BorderThickness="1"
@@ -302,32 +410,8 @@
                                                FontSize="12"
                                                Foreground="#1A7F37" />
 
-                                    <ItemsControl ItemsSource="{Binding ExponentiationAlgorithms}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="models:AlgorithmSelectionItem">
-                                                <CheckBox IsChecked="{Binding IsSelected}"
-                                                          Margin="0,2"
-                                                          HorizontalAlignment="Stretch">
-                                                    <Grid ColumnDefinitions="*, Auto">
-                                                        <TextBlock Grid.Column="0"
-                                                                   Text="{Binding Algorithm.DisplayName}"
-                                                                   FontSize="12"
-                                                                   VerticalAlignment="Center" />
-                                                        <Border Grid.Column="1"
-                                                                Background="#E1E4E8"
-                                                                CornerRadius="3"
-                                                                Padding="4,1"
-                                                                Margin="8,0,0,0"
-                                                                VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding ComplexityDisplayName}"
-                                                                       FontSize="10"
-                                                                       Foreground="#57606A" />
-                                                        </Border>
-                                                    </Grid>
-                                                </CheckBox>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <ItemsControl ItemsSource="{Binding ExponentiationAlgorithms}"
+                                                  ItemTemplate="{StaticResource AlgorithmItemTemplate}" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -335,100 +419,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- 3. Индивидуальная настройка параметров алгоритмов (опциональный экспандер) -->
-            <Expander Header="🛠️ Индивидуальная настройка параметров алгоритмов (нажмите для раскрытия)"
-                      Background="White"
-                      BorderBrush="#D0D7DE"
-                      BorderThickness="1"
-                      CornerRadius="8"
-                      Padding="12">
-                <StackPanel Spacing="12">
-                    <CheckBox IsChecked="{Binding UseIndividualSettings}"
-                              Content="Использовать индивидуальные настройки алгоритмов вместо общих"
-                              FontWeight="SemiBold" />
-
-                    <Separator Height="1" Background="#E1E4E8" />
-
-                    <!-- Выбор алгоритма для индивидуальной калибровки -->
-                    <Grid ColumnDefinitions="160, *">
-                        <TextBlock Grid.Column="0"
-                                   Text="Выбрать алгоритм:"
-                                   FontWeight="Medium"
-                                   VerticalAlignment="Center" />
-                        <ComboBox Grid.Column="1"
-                                  ItemsSource="{Binding Algorithms}"
-                                  SelectedItem="{Binding SelectedIndividualAlgorithm}"
-                                  HorizontalAlignment="Stretch">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:AlgorithmSelectionItem">
-                                    <TextBlock Text="{Binding Algorithm.DisplayName}" />
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </Grid>
-
-                    <!-- Панель индивидуальных параметров выбранного алгоритма -->
-                    <Border Background="#F6F8FA"
-                            BorderBrush="#D0D7DE"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="12"
-                            DataContext="{Binding SelectedIndividualAlgorithm}">
-                        <StackPanel Spacing="10">
-                            <TextBlock Text="{Binding Algorithm.DisplayName}"
-                                       FontWeight="Bold"
-                                       FontSize="14"
-                                       Foreground="#1F2328" />
-
-                            <TextBlock Text="{Binding Algorithm.Description}"
-                                       TextWrapping="Wrap"
-                                       FontSize="12"
-                                       Foreground="#57606A" />
-
-                            <Grid ColumnDefinitions="200, 160">
-                                <TextBlock Grid.Column="0" Text="Максимальный N:" VerticalAlignment="Center" />
-                                <NumericUpDown Grid.Column="1" Value="{Binding NMax}" Minimum="1" Maximum="2000000" FormatString="F0" />
-                            </Grid>
-
-                            <Grid ColumnDefinitions="200, 160">
-                                <TextBlock Grid.Column="0" Text="Шаг по N:" VerticalAlignment="Center" />
-                                <NumericUpDown Grid.Column="1" Value="{Binding NStep}" Minimum="1" Maximum="500000" FormatString="F0" />
-                            </Grid>
-
-                            <Grid ColumnDefinitions="200, 160">
-                                <TextBlock Grid.Column="0" Text="Число повторов на N:" VerticalAlignment="Center" />
-                                <NumericUpDown Grid.Column="1" Value="{Binding RunsPerN}" Minimum="1" Maximum="50" FormatString="F0" />
-                            </Grid>
-
-                            <!-- Карточка для матриц -->
-                            <Border Background="#F0F8FF" BorderBrush="#B6E3FF" BorderThickness="1" CornerRadius="4" Padding="8,6" IsVisible="{Binding HasM}">
-                                <TextBlock Text="ℹ️ Размеры матрицы: n и m синхронизированы (M = NMax, MStep = NStep)." FontSize="11" Foreground="#0969DA" />
-                            </Border>
-
-                            <!-- K для Миллера-Рабина -->
-                            <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasK}">
-                                <TextBlock Grid.Column="0" Text="Число раундов K:" VerticalAlignment="Center" />
-                                <NumericUpDown Grid.Column="1" Value="{Binding K}" Minimum="1" Maximum="200" FormatString="F0" />
-                            </Grid>
-
-                            <!-- X для степени / полинома -->
-                            <Grid ColumnDefinitions="200, 160" IsVisible="{Binding HasX}">
-                                <TextBlock Grid.Column="0" Text="Основание / аргумент X:" VerticalAlignment="Center" />
-                                <NumericUpDown Grid.Column="1" Value="{Binding X}" Increment="0.1" FormatString="F4" />
-                            </Grid>
-
-                            <CheckBox IsChecked="{Binding ForceRecalculate}"
-                                      Content="Принудительный пересчёт (игнорировать кэш БД)" />
-
-                            <Button Content="Сбросить этот алгоритм к рекомендованным"
-                                    Command="{Binding ResetToDefaults}"
-                                    HorizontalAlignment="Left" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Expander>
-
-            <!-- 4. Нижняя панель запуска -->
+            <!-- 3. Нижняя панель запуска -->
             <Border Background="White"
                     BorderBrush="#D0D7DE"
                     BorderThickness="1"

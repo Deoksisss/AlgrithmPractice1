@@ -413,8 +413,20 @@ public class Chart3DControl : Control
         if (!string.IsNullOrEmpty(p.ZLabel))
         {
             var zText = CreateText(p.ZLabel + " (Z)", 12, FontWeight.Bold, Brushes.DarkRed);
-            Point midZ = new Point(screenCorners[0].X - 45, (screenCorners[0].Y + screenCorners[4].Y) / 2);
-            context.DrawText(zText, midZ);
+            double dx = screenCorners[4].X - screenCorners[0].X;
+            double dy = screenCorners[4].Y - screenCorners[0].Y;
+            double len = Math.Sqrt(dx * dx + dy * dy);
+            double angle = len > 1e-6 ? Math.Atan2(dy, dx) : -Math.PI / 2.0;
+
+            double midX = (screenCorners[0].X + screenCorners[4].X) / 2.0;
+            double midY = (screenCorners[0].Y + screenCorners[4].Y) / 2.0;
+            double cx = midX + (len > 1e-6 ? (dy / len) * 18.0 : -18.0);
+            double cy = midY + (len > 1e-6 ? (-dx / len) * 18.0 : 0.0);
+
+            using (context.PushTransform(Matrix.CreateRotation(angle) * Matrix.CreateTranslation(cx, cy)))
+            {
+                context.DrawText(zText, new Point(-zText.Width / 2, -zText.Height / 2));
+            }
         }
     }
 

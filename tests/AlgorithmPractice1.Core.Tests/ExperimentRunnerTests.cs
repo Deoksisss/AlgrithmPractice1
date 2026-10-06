@@ -1,4 +1,5 @@
 using AlgorithmPractice1.Core.Algorithms.Part1_Vectors;
+using AlgorithmPractice1.Core.Algorithms.Part3_Individual;
 using AlgorithmPractice1.Core.Algorithms.Part4_Exponentiation;
 using AlgorithmPractice1.Core.Data;
 using AlgorithmPractice1.Core.Execution;
@@ -98,5 +99,73 @@ public class ExperimentRunnerTests
         Assert.Contains((20, 40), pairs);
         Assert.Contains((40, 20), pairs);
         Assert.Contains((40, 40), pairs);
+    }
+
+    [Fact]
+    public async Task RunBatchAsync_ReportsProgress_WithDetailsFor1DAndMillerRabin()
+    {
+        var factory = SqliteConnectionFactory.CreateInMemory();
+        using var keepAlive = factory.CreateConnection();
+        await DatabaseInitializer.InitializeAsync(factory);
+
+        var sessionRepo = new SessionRepository(factory);
+        var measurementRepo = new MeasurementRepository(factory);
+        var approxRepo = new ApproximationRepository(factory);
+        var runner = new ExperimentRunner(sessionRepo, measurementRepo, approxRepo);
+
+        var vectorAlg = new ConstantFunctionAlgorithm();
+        var vectorConfig = new ExperimentConfig { NMax = 20, NStep = 10, RunsPerN = 1, ForceRecalculate = true };
+
+        var mrAlg = new MillerRabinAlgorithm();
+        var mrConfig = new ExperimentConfig { NMax = 32, NStep = 16, K = 15, RunsPerN = 1, ForceRecalculate = true };
+
+        var requests = new List<ExperimentRequest>
+        {
+            new(vectorAlg, vectorConfig),
+            new(mrAlg, mrConfig)
+        };
+
+        var progressUpdates = new List<SessionProgressUpdate>();
+        var progress = new Progress<SessionProgressUpdate>(u =>
+        {
+            // Snapshot current items
+            progressUpdates.Add(new SessionProgressUpdate
+            {
+                CompletedAlgorithms = u.CompletedAlgorithms,
+                TotalAlgorithms = u.TotalAlgorithms,
+                CurrentRunningAlgorithmId = u.CurrentRunningAlgorithmId,
+                Items = u.Items.Select(it => new AlgorithmProgressItem
+                {
+                    AlgorithmId = it.AlgorithmId,
+                    AlgorithmName = it.AlgorithmName,
+                    Status = it.Status,
+                    CurrentN = it.CurrentN,
+                    TotalNCount = it.TotalNCount,
+                    Details = it.Details
+                }).ToList()
+            });
+        });
+
+        await runner.RunBatchAsync(requests, "Progress Details Test", progress);
+
+        // Проверяем, что для одномерного алгоритма были обновления со строкой N = ... (X/Y)
+        var vectorRunningDetails = progressUpdates
+            .SelectMany(u => u.Items)
+            .Where(it => it.AlgorithmId == vectorAlg.Id && it.Details != null && it.Details.StartsWith("N ="))
+            .Select(it => it.Details)
+            .ToList();
+
+        Assert.NotEmpty(vectorRunningDetails);
+        Assert.Contains(vectorRunningDetails, d => d!.Contains("N = 10 (1/2)") || d!.Contains("N = 20 (2/2)"));
+
+        // Проверяем, что для Миллера-Рабина детали содержали K = 15
+        var mrRunningDetails = progressUpdates
+            .SelectMany(u => u.Items)
+            .Where(it => it.AlgorithmId == mrAlg.Id && it.Details != null && it.Details.StartsWith("N ="))
+            .Select(it => it.Details)
+            .ToList();
+
+        Assert.NotEmpty(mrRunningDetails);
+        Assert.Contains(mrRunningDetails, d => d!.Contains("K = 15"));
     }
 }

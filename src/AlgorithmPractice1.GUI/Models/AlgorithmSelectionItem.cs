@@ -1,15 +1,24 @@
 using AlgorithmPractice1.Core.Abstractions;
 using AlgorithmPractice1.Core.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace AlgorithmPractice1.GUI.Models;
 
 public partial class AlgorithmSelectionItem : ObservableObject
 {
+    private bool _isResetting;
+
     public IAlgorithm Algorithm { get; }
 
     [ObservableProperty]
     private bool _isSelected = true;
+
+    [ObservableProperty]
+    private bool _isExpanded;
+
+    [ObservableProperty]
+    private bool _useCustomSettings;
 
     [ObservableProperty]
     private int _nMax;
@@ -56,6 +65,10 @@ public partial class AlgorithmSelectionItem : ObservableObject
         {
             M = value;
         }
+        if (!_isResetting)
+        {
+            UseCustomSettings = true;
+        }
     }
 
     partial void OnNStepChanged(int value)
@@ -63,6 +76,26 @@ public partial class AlgorithmSelectionItem : ObservableObject
         if (HasM)
         {
             MStep = value;
+        }
+        if (!_isResetting)
+        {
+            UseCustomSettings = true;
+        }
+    }
+
+    partial void OnRunsPerNChanged(int value)
+    {
+        if (!_isResetting)
+        {
+            UseCustomSettings = true;
+        }
+    }
+
+    partial void OnForceRecalculateChanged(bool value)
+    {
+        if (!_isResetting)
+        {
+            UseCustomSettings = true;
         }
     }
 
@@ -72,17 +105,29 @@ public partial class AlgorithmSelectionItem : ObservableObject
         ResetToDefaults();
     }
 
+    [RelayCommand]
+    public void ResetDefaults() => ResetToDefaults();
+
     public void ResetToDefaults()
     {
-        var def = Algorithm.DefaultConfig;
-        NMax = def.NMax;
-        NStep = def.NStep;
-        RunsPerN = def.RunsPerN;
-        M = HasM ? def.NMax : def.M;
-        MStep = HasM ? def.NStep : def.MStep;
-        K = def.K;
-        X = def.X;
-        ForceRecalculate = false;
+        _isResetting = true;
+        try
+        {
+            var def = Algorithm.DefaultConfig;
+            NMax = def.NMax;
+            NStep = def.NStep;
+            RunsPerN = def.RunsPerN;
+            M = HasM ? def.NMax : def.M;
+            MStep = HasM ? def.NStep : def.MStep;
+            K = def.K;
+            X = def.X;
+            ForceRecalculate = false;
+            UseCustomSettings = false;
+        }
+        finally
+        {
+            _isResetting = false;
+        }
     }
 
     public ExperimentConfig ToConfig()
@@ -96,9 +141,33 @@ public partial class AlgorithmSelectionItem : ObservableObject
             RunsPerN = RunsPerN > 0 ? RunsPerN : 1,
             M = HasM ? effectiveNMax : null,
             MStep = HasM ? effectiveNStep : null,
-            K = HasK ? K : null,
-            X = HasX ? X : null,
+            K = HasK ? (K ?? 20) : null,
+            X = HasX ? (X ?? 1.5) : null,
             ForceRecalculate = ForceRecalculate
+        };
+    }
+
+    public ExperimentConfig ToEffectiveConfig(int commonNMax, int commonNStep, int commonRuns, double commonX, bool commonForce)
+    {
+        if (UseCustomSettings)
+        {
+            return ToConfig();
+        }
+
+        int effectiveNMax = commonNMax > 0 ? commonNMax : 100;
+        int effectiveNStep = commonNStep > 0 ? commonNStep : 10;
+        int effectiveRuns = commonRuns > 0 ? commonRuns : 1;
+
+        return new ExperimentConfig
+        {
+            NMax = effectiveNMax,
+            NStep = effectiveNStep,
+            RunsPerN = effectiveRuns,
+            M = HasM ? effectiveNMax : null,
+            MStep = HasM ? effectiveNStep : null,
+            K = HasK ? (K ?? 20) : null,
+            X = HasX ? (X ?? commonX) : null,
+            ForceRecalculate = commonForce
         };
     }
 }

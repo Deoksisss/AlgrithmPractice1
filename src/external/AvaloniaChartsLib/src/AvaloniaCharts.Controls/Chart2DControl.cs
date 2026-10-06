@@ -224,7 +224,12 @@ public class Chart2DControl : Control
         if (!string.IsNullOrEmpty(_params.YLabel))
         {
             var yLabelText = CreateText(_params.YLabel, 12, FontWeight.Bold, Brushes.Black);
-            context.DrawText(yLabelText, new Point(10, plotRect.Top + plotRect.Height / 2 - yLabelText.Height / 2));
+            double cx = 18;
+            double cy = plotRect.Top + plotRect.Height / 2;
+            using (context.PushTransform(Matrix.CreateRotation(-Math.PI / 2) * Matrix.CreateTranslation(cx, cy)))
+            {
+                context.DrawText(yLabelText, new Point(-yLabelText.Width / 2, -yLabelText.Height / 2));
+            }
         }
 
         // Отрисовка линий графиков
