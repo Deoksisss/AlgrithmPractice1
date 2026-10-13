@@ -6,8 +6,8 @@
              x:Class="AlgorithmPractice1.GUI.Views.HistoryView"
              x:DataType="vm:HistoryViewModel">
 
-    <Grid ColumnDefinitions="360, *" Margin="16">
-        <!-- Левая колонка: история сессий -->
+    <Grid ColumnDefinitions="380, *" Margin="16">
+        <!-- Левая колонка: история сессий и входящие в них тесты -->
         <Border Grid.Column="0"
                 Background="White"
                 BorderBrush="#D0D7DE"
@@ -17,7 +17,7 @@
                 Margin="0,0,12,0">
             <Grid RowDefinitions="Auto, Auto, *">
                 <TextBlock Grid.Row="0"
-                           Text="История сессий"
+                           Text="История сессий и тестов"
                            FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="#1F2328"
@@ -39,48 +39,115 @@
                                 FontSize="12"
                                 Padding="8,4" />
                     </StackPanel>
-                    <Button Content="🗑️ Удалить выбранные"
+                    <Button Content="🗑️ Удалить выбранные сессии"
                             Command="{Binding DeleteSelectedSessionsCommand}"
                             FontSize="12"
                             Foreground="#CF222E"
                             Padding="8,4" />
                 </StackPanel>
 
-                <!-- Список сессий -->
-                <ListBox Grid.Row="2"
-                         ItemsSource="{Binding Sessions}"
-                         Background="Transparent">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="models:SessionListItemViewModel">
-                            <Border BorderBrush="#E1E4E8"
-                                    BorderThickness="0,0,0,1"
-                                    Padding="4,8">
-                                <Grid ColumnDefinitions="Auto, *">
-                                    <CheckBox Grid.Column="0"
-                                              IsChecked="{Binding IsSelected}"
-                                              VerticalAlignment="Top"
-                                              Margin="0,2,8,0" />
-                                    <StackPanel Grid.Column="1" Spacing="2">
-                                        <TextBlock Text="{Binding DisplayLabel}"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="#1F2328" />
-                                        <TextBlock Text="{Binding FormattedDate}"
-                                                   FontSize="11"
-                                                   Foreground="#57606A" />
-                                        <TextBlock Text="{Binding AlgorithmsSummary}"
-                                                   FontSize="11"
-                                                   Foreground="#0969DA"
-                                                   TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                <!-- Список сессий с вложенными тестами -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Sessions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:SessionListItemViewModel">
+                                <Border Background="#FAFBFC"
+                                        BorderBrush="#D0D7DE"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Margin="0,0,0,8"
+                                        Opacity="{Binding SessionOpacity}">
+                                    <Expander IsExpanded="{Binding IsExpanded}"
+                                              Background="Transparent"
+                                              HorizontalAlignment="Stretch">
+                                        <Expander.Header>
+                                            <Grid ColumnDefinitions="Auto, *, Auto">
+                                                <CheckBox Grid.Column="0"
+                                                          IsChecked="{Binding IsSessionChecked}"
+                                                          IsEnabled="{Binding IsSessionEnabled}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="0,0,8,0"
+                                                          ToolTip.Tip="Выбрать все доступные тесты сессии" />
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DisplayLabel}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="13"
+                                                               Foreground="#1F2328"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding FormattedDate}"
+                                                               FontSize="11"
+                                                               Foreground="#656D76" />
+                                                </StackPanel>
+                                                <Border Grid.Column="2"
+                                                        Background="#EBF5FF"
+                                                        CornerRadius="10"
+                                                        Padding="6,2"
+                                                        VerticalAlignment="Center"
+                                                        Margin="6,0,0,0">
+                                                    <TextBlock Text="{Binding SelectedTestsCountSummary}"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="#0969DA" />
+                                                </Border>
+                                            </Grid>
+                                        </Expander.Header>
+
+                                        <!-- Список отдельных тестов сессии -->
+                                        <StackPanel Margin="8,4,8,8" Spacing="4">
+                                            <Separator Height="1" Background="#E1E4E8" Margin="0,0,0,4" />
+                                            <ItemsControl ItemsSource="{Binding Tests}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="models:SessionTestItemViewModel">
+                                                        <Border Background="White"
+                                                                BorderBrush="#E1E4E8"
+                                                                BorderThickness="1"
+                                                                CornerRadius="4"
+                                                                Padding="8,6"
+                                                                Margin="0,2"
+                                                                Opacity="{Binding Opacity}">
+                                                            <Grid ColumnDefinitions="Auto, *, Auto">
+                                                                <CheckBox Grid.Column="0"
+                                                                          IsChecked="{Binding IsSelected}"
+                                                                          IsEnabled="{Binding IsEnabled}"
+                                                                          VerticalAlignment="Center"
+                                                                          Margin="0,0,8,0" />
+                                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                                                    <TextBlock Text="{Binding DisplayName}"
+                                                                               FontSize="12"
+                                                                               FontWeight="Medium"
+                                                                               Foreground="#1F2328"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                    <TextBlock Text="{Binding ConfigSummary}"
+                                                                               FontSize="10"
+                                                                               Foreground="#656D76" />
+                                                                </StackPanel>
+                                                                <Border Grid.Column="2"
+                                                                        Background="{Binding BadgeBackground}"
+                                                                        CornerRadius="3"
+                                                                        Padding="5,1"
+                                                                        VerticalAlignment="Center"
+                                                                        Margin="6,0,0,0">
+                                                                    <TextBlock Text="{Binding DimensionBadge}"
+                                                                               FontSize="10"
+                                                                               FontWeight="Bold"
+                                                                               Foreground="{Binding BadgeForeground}" />
+                                                                </Border>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Expander>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </Grid>
         </Border>
 
-        <!-- Правая колонка: отображение графиков (сворачиваемые Expander'ы в режиме сессии / мульти-серии в сравнении) -->
+        <!-- Правая колонка: единый общий график для всех выбранных тестов -->
         <Border Grid.Column="1"
                 Background="White"
                 BorderBrush="#D0D7DE"
@@ -88,7 +155,7 @@
                 CornerRadius="6"
                 Padding="16">
             <Grid RowDefinitions="Auto, *">
-                <!-- Статусная строка -->
+                <!-- Статусная строка с бейджами режима -->
                 <Border Grid.Row="0"
                         Background="#F6F8FA"
                         BorderBrush="#D0D7DE"
@@ -103,52 +170,74 @@
                                    Foreground="#1F2328"
                                    VerticalAlignment="Center" />
 
-                        <Border Grid.Column="1"
-                                Background="#DDF4FF"
-                                BorderBrush="#54AEFF"
-                                BorderThickness="1"
-                                CornerRadius="4"
-                                Padding="8,2"
-                                IsVisible="{Binding IsComparisonMode}">
-                            <TextBlock Text="Сравнение сессий"
-                                       FontSize="11"
-                                       FontWeight="Bold"
-                                       Foreground="#0969DA" />
-                        </Border>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <!-- Бейдж 2D / 3D режима -->
+                            <Border Background="#EBF5FF"
+                                    BorderBrush="#0969DA"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8,2"
+                                    IsVisible="{Binding HasChartModeBadge}">
+                                <TextBlock Text="{Binding ChartModeBadge}"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="#0969DA" />
+                            </Border>
+
+                            <!-- Бейдж сравнения -->
+                            <Border Background="#DDF4FF"
+                                    BorderBrush="#54AEFF"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="8,2"
+                                    IsVisible="{Binding IsComparisonMode}">
+                                <TextBlock Text="Сравнение тестов"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="#0969DA" />
+                            </Border>
+                        </StackPanel>
                     </Grid>
                 </Border>
 
-                <!-- Контейнер с графиками -->
-                <ScrollViewer Grid.Row="1">
-                    <ItemsControl ItemsSource="{Binding DisplayCharts}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="models:ChartDisplayModel">
-                                <Expander IsExpanded="True"
-                                          Margin="0,0,0,12"
-                                          HorizontalAlignment="Stretch">
-                                    <Expander.Header>
-                                        <Grid ColumnDefinitions="*, Auto">
-                                            <TextBlock Grid.Column="0"
-                                                       Text="{Binding Title}"
-                                                       FontWeight="SemiBold"
-                                                       FontSize="15"
-                                                       Foreground="#1F2328" />
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding Subtitle}"
-                                                       FontSize="12"
-                                                       Foreground="#57606A"
-                                                       VerticalAlignment="Center"
-                                                       Margin="8,0,0,0" />
-                                        </Grid>
-                                    </Expander.Header>
+                <!-- Контейнер единого графика -->
+                <Grid Grid.Row="1">
+                    <!-- Сам график (когда выбран хотя бы один тест) -->
+                    <views:ChartDisplayView DataContext="{Binding ActiveChart}"
+                                            IsVisible="{Binding HasActiveChart}"
+                                            VerticalAlignment="Stretch"
+                                            HorizontalAlignment="Stretch" />
 
-                                    <!-- Сам график -->
-                                    <views:ChartDisplayView DataContext="{Binding}" Margin="0,8,0,0" />
-                                </Expander>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                    <!-- Заглушка, когда ничего не выбрано -->
+                    <Border Background="#F6F8FA"
+                            BorderBrush="#D0D7DE"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="32"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            MaxWidth="520"
+                            IsVisible="{Binding !HasActiveChart}">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center">
+                            <TextBlock Text="📊" FontSize="36" HorizontalAlignment="Center" />
+                            <TextBlock Text="Нет выбранных тестов"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       Foreground="#1F2328"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="Раскройте сессию в списке слева и отметьте один или несколько тестов для отображения на общем графике."
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       FontSize="12"
+                                       Foreground="#656D76" />
+                            <TextBlock Text="💡 Можно совмещать тесты из одной или нескольких разных сессий. Выбор 2D теста блокирует 3D тесты, а выбор 3D теста блокирует 2D тесты."
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="#0969DA" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Grid>
         </Border>
     </Grid>

@@ -1,5 +1,6 @@
 using AlgorithmPractice1.Core.Approximation;
 using AlgorithmPractice1.Core.Models;
+using AlgorithmPractice1.Core.Registry;
 using AlgorithmPractice1.GUI.Models;
 using AvaloniaCharts.Controls;
 using AvaloniaCharts.Core;
@@ -11,140 +12,204 @@ public static class ChartBuilderService
     private static readonly string[] Palette =
     {
         "#0066CC", // Синий
-        "#E65100", // Оранжевый
+        "#D81B60", // Малиновый
         "#2E7D32", // Зелёный
+        "#E65100", // Оранжевый
         "#8E24AA", // Фиолетовый
         "#00838F", // Бирюзовый
-        "#D81B60", // Малиновый
-        "#5D4037"  // Коричневый
+        "#F57F17", // Жёлто-янтарный
+        "#5D4037", // Коричневый
+        "#1B5E20", // Тёмно-зелёный
+        "#C2185B", // Рубиновый
+        "#0288D1", // Голубой
+        "#6A1B9A"  // Тёмно-фиолетовый
     };
 
     private static readonly string[] ApproxPalette =
     {
-        "#FF8F00", // Янтарный (основной цвет аппроксимации)
-        "#FFB300", // Светло-янтарный
-        "#00C853", // Светло-зеленый
+        "#FF8F00", // Янтарный
+        "#FF3D00", // Красно-оранжевый
+        "#00E676", // Светло-зелёный
         "#E040FB", // Светло-фиолетовый
         "#00E5FF", // Светло-бирюзовый
         "#FF4081", // Светло-малиновый
-        "#FF6E40"  // Коралловый
+        "#FFAB00"  // Золотистый
     };
 
-    public static ChartDisplayModel BuildSingleAlgorithmChart(SessionAlgorithm sa, string algorithmDisplayName)
+    /// <summary>
+    /// Строит единый общий график для любого набора выбранных тестов (одной или нескольких сессий).
+    /// </summary>
+    public static ChartDisplayModel? BuildUnifiedChart(
+        IReadOnlyList<(BenchmarkSession Session, SessionAlgorithm SessionAlg)> selectedTests)
     {
-        bool isMatrix = sa.AlgorithmId == "MatrixMultiply";
-
-        if (isMatrix)
+        if (selectedTests == null || selectedTests.Count == 0)
         {
-            return BuildMatrix3DChart(new[] { sa }, algorithmDisplayName);
+            return null;
         }
 
-        return Build2DChart(sa, algorithmDisplayName);
+        bool is3D = selectedTests.All(x => x.SessionAlg.AlgorithmId == "MatrixMultiply");
+
+        return is3D ? BuildUnified3DChart(selectedTests) : BuildUnified2DChart(selectedTests);
     }
 
-    private static ChartDisplayModel Build2DChart(SessionAlgorithm sa, string algorithmDisplayName)
+    private static ChartDisplayModel BuildUnified2DChart(
+        IReadOnlyList<(BenchmarkSession Session, SessionAlgorithm SessionAlg)> selectedTests)
     {
-        var points = sa.Measurements;
-        bool isSteps = sa.Measurements.Any(m => m.StepCount.HasValue);
-
+        var seriesList = new List<Chart2DSeries>();
+        bool isSteps = selectedTests.Any(x => x.SessionAlg.Measurements.Any(m => m.StepCount.HasValue));
         string yLabel = isSteps ? "Количество шагов (операций)" : "Время выполнения (мс)";
 
-        var seriesList = new List<Chart2DSeries>();
+        bool multipleSessions = selectedTests.Select(x => x.Session.Id).Distinct().Count() > 1;
+        bool hasDuplicateAlgs = selectedTests.GroupBy(x => x.SessionAlg.AlgorithmId).Any(g => g.Count() > 1);
+        bool showSessionTag = multipleSessions || hasDuplicateAlgs;
 
-        // 1. Эмпирическая серия
-        var groupedPoints = points
-            .GroupBy(p => p.N)
-            .OrderBy(g => g.Key)
-            .Select(g => new Point2D(
-                g.Key,
-                isSteps ? g.Average(p => p.StepCount.GetValueOrDefault(0)) : g.Average(p => p.ElapsedMilliseconds.GetValueOrDefault(0.0))))
-            .ToList();
+        var seenCount = new Dictionary<(long SessionId, string AlgId), int>();
 
-        if (groupedPoints.Count > 0)
+        for (int i = 0; i < selectedTests.Count; i++)
         {
-            seriesList.Add(new Chart2DSeries
+            var (session, sa) = selectedTests[i];
+            string color = Palette[i % Palette.Length];
+
+            var algMeta = AlgorithmRegistry.Instance.FindById(sa.AlgorithmId);
+            string algDisplayName = algMeta?.DisplayName ?? sa.AlgorithmId;
+            string sessionTag = string.IsNullOrWhiteSpace(session.Label) ? $"Сессия #{session.Id}" : session.Label;
+
+            var key = (session.Id, sa.AlgorithmId);
+            int currentCount = seenCount.GetValueOrDefault(key, 0) + 1;
+            seenCount[key] = currentCount;
+
+            string duplicateSuffix = currentCount > 1 ? $" #{currentCount}" : string.Empty;
+
+            string baseLabel = showSessionTag
+                ? $"{algDisplayName} [{sessionTag}]{duplicateSuffix}"
+                : $"{algDisplayName}{duplicateSuffix}";
+
+            // 1. Эмпирическая серия
+            var grouped = sa.Measurements
+                .GroupBy(m => m.N)
+                .OrderBy(g => g.Key)
+                .Select(g => new Point2D(
+                    g.Key,
+                    isSteps ? g.Average(p => p.StepCount.GetValueOrDefault(0)) : g.Average(p => p.ElapsedMilliseconds.GetValueOrDefault(0.0))))
+                .ToList();
+
+            if (grouped.Count > 0)
             {
-                Name = "Эмпирические данные",
-                Points = groupedPoints,
-                ColorHex = "#0055D4",
-                LineStyle = LineStyle.Solid,
-                LineThickness = 2.0
-            });
-        }
-
-        // 2. Серия аппроксимации
-        if (sa.Approximation != null && groupedPoints.Count > 1)
-        {
-            var approx = sa.Approximation;
-            var funcType = ComplexityFunctionExtensions.FromKey(approx.FunctionType);
-
-            int minN = (int)groupedPoints.First().X;
-            int maxN = (int)groupedPoints.Last().X;
-            int step = Math.Max(1, (maxN - minN) / 100);
-
-            var approxPoints = new List<Point2D>();
-            for (int n = minN; n <= maxN; n += step)
-            {
-                double fVal = LeastSquaresSolver.EvaluateBasisFunction(funcType, n);
-                double yVal = approx.Coefficient * fVal;
-                approxPoints.Add(new Point2D(n, yVal));
+                seriesList.Add(new Chart2DSeries
+                {
+                    Name = baseLabel,
+                    Points = grouped,
+                    ColorHex = color,
+                    LineStyle = LineStyle.Solid,
+                    LineThickness = 2.0
+                });
             }
 
-            seriesList.Add(new Chart2DSeries
+            // 2. Аппроксимация
+            var approx = sa.Approximation;
+            if (approx == null && grouped.Count > 1 && algMeta != null)
             {
-                Name = approx.LegendLabel,
-                Points = approxPoints,
-                ColorHex = "#FF8F00", // Оранжево-янтарный
-                LineStyle = LineStyle.Dashed,
-                LineThickness = 2.5
-            });
+                var fitPoints = sa.Measurements
+                    .Select(m => ((double)m.N, isSteps ? (double)m.StepCount.GetValueOrDefault(0) : m.ElapsedMilliseconds.GetValueOrDefault(0.0)))
+                    .ToList();
+                approx = LeastSquaresSolver.Fit(fitPoints, algMeta.TheoreticalComplexity, sa.Id);
+            }
+
+            if (approx != null && grouped.Count > 1)
+            {
+                var funcType = ComplexityFunctionExtensions.FromKey(approx.FunctionType);
+                int minN = (int)grouped.First().X;
+                int maxN = (int)grouped.Last().X;
+                int step = Math.Max(1, (maxN - minN) / 100);
+
+                var approxPoints = new List<Point2D>();
+                for (int n = minN; n <= maxN; n += step)
+                {
+                    double fVal = LeastSquaresSolver.EvaluateBasisFunction(funcType, n);
+                    approxPoints.Add(new Point2D(n, approx.Coefficient * fVal));
+                }
+
+                string approxLabel = $"{baseLabel} — {funcType.ToDisplayName()} (MSE: {ApproximationResult.FormatMse(approx.Mse)})";
+
+                seriesList.Add(new Chart2DSeries
+                {
+                    Name = approxLabel,
+                    Points = approxPoints,
+                    ColorHex = color,
+                    LineStyle = LineStyle.Dashed,
+                    LineThickness = 2.0
+                });
+            }
         }
+
+        string title;
+        if (selectedTests.Count == 1)
+        {
+            var first = selectedTests[0];
+            var meta = AlgorithmRegistry.Instance.FindById(first.SessionAlg.AlgorithmId);
+            title = meta?.DisplayName ?? first.SessionAlg.AlgorithmId;
+        }
+        else
+        {
+            var distinctAlgs = selectedTests.Select(x => x.SessionAlg.AlgorithmId).Distinct().ToList();
+            if (distinctAlgs.Count == 1)
+            {
+                var meta = AlgorithmRegistry.Instance.FindById(distinctAlgs[0]);
+                title = $"Сравнение: {meta?.DisplayName ?? distinctAlgs[0]} ({selectedTests.Count} тестов)";
+            }
+            else
+            {
+                title = $"Сравнение алгоритмов ({selectedTests.Count} тестов)";
+            }
+        }
+
+        int sessionsCount = selectedTests.Select(x => x.Session.Id).Distinct().Count();
+        string subtitle = selectedTests.Count == 1
+            ? $"Сессия #{selectedTests[0].Session.Id} ({selectedTests[0].Session.Label ?? "без метки"})"
+            : $"Выбрано {selectedTests.Count} тестов из {sessionsCount} сессий";
 
         var chartParams = new Chart2DParams
         {
-            Title = $"{algorithmDisplayName}",
+            Title = title,
             XLabel = "Размер входа N",
             YLabel = yLabel
         };
 
         return new ChartDisplayModel
         {
-            Title = algorithmDisplayName,
-            Subtitle = sa.Approximation != null
-                ? $"МНК: {sa.Approximation.LegendLabel} | C = {sa.Approximation.Coefficient:E3}"
-                : "Замеры выполнены",
-            AlgorithmId = sa.AlgorithmId,
+            Title = title,
+            Subtitle = subtitle,
+            AlgorithmId = selectedTests.Count == 1 ? selectedTests[0].SessionAlg.AlgorithmId : "Multiple",
             Is3D = false,
             Series2D = seriesList,
             Params2D = chartParams
         };
     }
 
-    public static ChartDisplayModel BuildMatrix3DChart(IReadOnlyList<SessionAlgorithm> matrixAlgorithms, string algorithmDisplayName)
+    private static ChartDisplayModel BuildUnified3DChart(
+        IReadOnlyList<(BenchmarkSession Session, SessionAlgorithm SessionAlg)> selectedTests)
     {
         var surfaceSeriesList = new List<Chart3DSeries>();
-        string? singleSubtitle = null;
 
-        for (int idx = 0; idx < matrixAlgorithms.Count; idx++)
+        for (int idx = 0; idx < selectedTests.Count; idx++)
         {
-            var sa = matrixAlgorithms[idx];
+            var (session, sa) = selectedTests[idx];
             var measurements = sa.Measurements;
             if (measurements.Count == 0) continue;
 
             string colorHex = Palette[idx % Palette.Length];
             string approxColorHex = ApproxPalette[idx % ApproxPalette.Length];
+            string sessionTag = string.IsNullOrWhiteSpace(session.Label) ? $"Сессия #{session.Id}" : session.Label;
 
-            string empiricalSeriesName = matrixAlgorithms.Count > 1
-                ? $"[Сессия #{sa.SessionId}] Замеры"
+            string empiricalSeriesName = selectedTests.Count > 1
+                ? $"[{sessionTag}] Замеры"
                 : "Эмпирические замеры (время, мс)";
 
-            // Группируем по N и M
             var distinctN = measurements.Select(m => (double)m.N).Distinct().OrderBy(v => v).ToArray();
             var distinctM = measurements.Select(m => (double)m.M.GetValueOrDefault(50)).Distinct().OrderBy(v => v).ToArray();
 
             SurfaceData surfaceData;
 
-            // Если M фиксировано (одно значение), создаём полосу шириной вокруг M для построения 3D-сетки
             if (distinctM.Length == 1)
             {
                 double fixedM = distinctM[0];
@@ -174,7 +239,6 @@ public static class ChartBuilderService
             }
             else
             {
-                // Полноценная сетка NxM
                 double[,] zVals = new double[distinctN.Length, distinctM.Length];
                 for (int i = 0; i < distinctN.Length; i++)
                 {
@@ -195,7 +259,6 @@ public static class ChartBuilderService
                 };
             }
 
-            // Добавляем эмпирическую поверхность (SolidWithWireframe)
             surfaceSeriesList.Add(new Chart3DSeries
             {
                 Name = empiricalSeriesName,
@@ -205,7 +268,7 @@ public static class ChartBuilderService
                 Opacity = 0.75
             });
 
-            // Получаем или вычисляем аппроксимацию O(n²·m)
+            // Аппроксимация O(n²·m)
             var approx = sa.Approximation;
             if (approx == null && measurements.Count > 1)
             {
@@ -231,8 +294,8 @@ public static class ChartBuilderService
                     }
                 }
 
-                string approxSeriesName = matrixAlgorithms.Count > 1
-                    ? $"[Сессия #{sa.SessionId}] {approx.LegendLabel}"
+                string approxSeriesName = selectedTests.Count > 1
+                    ? $"[{sessionTag}] {approx.LegendLabel}"
                     : approx.LegendLabel;
 
                 surfaceSeriesList.Add(new Chart3DSeries
@@ -248,121 +311,34 @@ public static class ChartBuilderService
                     Style = SurfaceStyle.Wireframe,
                     Opacity = 0.95
                 });
-
-                if (matrixAlgorithms.Count == 1)
-                {
-                    singleSubtitle = $"МНК: {approx.LegendLabel} | C = {approx.Coefficient:E3}";
-                }
             }
         }
 
+        int sessionCount = selectedTests.Select(x => x.Session.Id).Distinct().Count();
+        string title = selectedTests.Count > 1
+            ? $"Сравнение: Умножение матриц (3D, {selectedTests.Count} тестов)"
+            : "Умножение матриц (3D)";
+
+        string subtitle = selectedTests.Count > 1
+            ? $"Сравнение 3D поверхностей по {selectedTests.Count} тестам из {sessionCount} сессий"
+            : "3D график зависимости времени от N и M (A: n×m, B: m×n)";
+
         var chartParams = new Chart3DParams
         {
-            Title = $"{algorithmDisplayName} (3D)",
+            Title = title,
             XLabel = "Размер N",
             YLabel = "Размер M",
             ZLabel = "Время (мс)"
         };
 
-        string subtitle = matrixAlgorithms.Count > 1
-            ? $"Сравнение матричного умножения по {matrixAlgorithms.Count} сессиям (3D)"
-            : (singleSubtitle ?? "3D график зависимости времени от N и M (A: n×m, B: m×n)");
-
         return new ChartDisplayModel
         {
-            Title = algorithmDisplayName,
+            Title = title,
             Subtitle = subtitle,
             AlgorithmId = "MatrixMultiply",
             Is3D = true,
             Series3D = surfaceSeriesList,
             Params3D = chartParams
-        };
-    }
-
-    public static ChartDisplayModel BuildComparisonChart(
-        string algorithmId,
-        string algorithmDisplayName,
-        IReadOnlyList<(BenchmarkSession Session, SessionAlgorithm SessionAlg)> algorithmsAcrossSessions)
-    {
-        if (algorithmId == "MatrixMultiply")
-        {
-            var saList = algorithmsAcrossSessions.Select(x => x.SessionAlg).ToList();
-            return BuildMatrix3DChart(saList, algorithmDisplayName);
-        }
-
-        var seriesList = new List<Chart2DSeries>();
-        bool isSteps = algorithmsAcrossSessions.Any(x => x.SessionAlg.Measurements.Any(m => m.StepCount.HasValue));
-        string yLabel = isSteps ? "Количество шагов (операций)" : "Время выполнения (мс)";
-
-        for (int i = 0; i < algorithmsAcrossSessions.Count; i++)
-        {
-            var (session, sa) = algorithmsAcrossSessions[i];
-            string color = Palette[i % Palette.Length];
-
-            // 1. Эмпирическая серия для этой сессии
-            var grouped = sa.Measurements
-                .GroupBy(m => m.N)
-                .OrderBy(g => g.Key)
-                .Select(g => new Point2D(
-                    g.Key,
-                    isSteps ? g.Average(p => p.StepCount.GetValueOrDefault(0)) : g.Average(p => p.ElapsedMilliseconds.GetValueOrDefault(0.0))))
-                .ToList();
-
-            if (grouped.Count > 0)
-            {
-                seriesList.Add(new Chart2DSeries
-                {
-                    Name = $"[{session.Label ?? $"Сессия #{session.Id}"}] Эмпирические",
-                    Points = grouped,
-                    ColorHex = color,
-                    LineStyle = LineStyle.Solid,
-                    LineThickness = 2.0
-                });
-            }
-
-            // 2. Аппроксимация для этой сессии
-            if (sa.Approximation != null && grouped.Count > 1)
-            {
-                var approx = sa.Approximation;
-                var funcType = ComplexityFunctionExtensions.FromKey(approx.FunctionType);
-
-                int minN = (int)grouped.First().X;
-                int maxN = (int)grouped.Last().X;
-                int step = Math.Max(1, (maxN - minN) / 80);
-
-                var approxPoints = new List<Point2D>();
-                for (int n = minN; n <= maxN; n += step)
-                {
-                    double fVal = LeastSquaresSolver.EvaluateBasisFunction(funcType, n);
-                    approxPoints.Add(new Point2D(n, approx.Coefficient * fVal));
-                }
-
-                seriesList.Add(new Chart2DSeries
-                {
-                    Name = $"[{session.Label ?? $"Сессия #{session.Id}"}] Аппроксимация (MSE: {ApproximationResult.FormatMse(approx.Mse)})",
-                    Points = approxPoints,
-                    ColorHex = color,
-                    LineStyle = LineStyle.Dashed,
-                    LineThickness = 2.0
-                });
-            }
-        }
-
-        var chartParams = new Chart2DParams
-        {
-            Title = $"Сравнение: {algorithmDisplayName}",
-            XLabel = "Размер входа N",
-            YLabel = yLabel
-        };
-
-        return new ChartDisplayModel
-        {
-            Title = $"Сравнение: {algorithmDisplayName}",
-            Subtitle = $"Сравнение по {algorithmsAcrossSessions.Count} сессиям",
-            AlgorithmId = algorithmId,
-            Is3D = false,
-            Series2D = seriesList,
-            Params2D = chartParams
         };
     }
 }
