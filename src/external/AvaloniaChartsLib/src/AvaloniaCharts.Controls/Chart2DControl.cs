@@ -340,10 +340,19 @@ public class Chart2DControl : Control
             foreground);
     }
 
-    private static string FormatNumber(double val)
+    public static string FormatNumber(double val)
     {
         if (Math.Abs(val) < 1e-9) return "0";
-        if (Math.Abs(val) >= 10000 || Math.Abs(val) < 0.01) return val.ToString("E2", CultureInfo.InvariantCulture);
-        return val.ToString("G5", CultureInfo.InvariantCulture);
+
+        // Экспоненциальная запись только для астрономических (>= 1e12) или сверхмалых (< 1e-4) величин
+        if (Math.Abs(val) >= 1e12 || (Math.Abs(val) < 1e-4 && Math.Abs(val) > 0))
+            return val.ToString("E2", CultureInfo.InvariantCulture);
+
+        // Для целых чисел (характерно для n, m, шагов) выводим десятичное число без нулей после запятой
+        if (Math.Abs(val - Math.Round(val)) < 1e-6)
+            return Math.Round(val).ToString("F0", CultureInfo.InvariantCulture);
+
+        // Для дробных величин выводим до 3 знаков без лишних замыкающих нулей
+        return val.ToString("0.###", CultureInfo.InvariantCulture);
     }
 }

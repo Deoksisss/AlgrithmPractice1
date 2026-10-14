@@ -313,7 +313,7 @@ public class Chart3DControl : Control
             context.DrawGeometry(fillBrush, wirePen, geo);
         }
 
-        DrawBoundingBoxAndLabels(context, transform, width, height, _params);
+        DrawBoundingBoxAndLabels(context, transform, width, height, _params, minX, maxX, minY, maxY, minZ, maxZ);
         DrawLegend(context, _seriesList);
     }
 
@@ -368,7 +368,18 @@ public class Chart3DControl : Control
         }
     }
 
-    private static void DrawBoundingBoxAndLabels(DrawingContext context, Matrix4x4Data transform, double width, double height, Chart3DParams p)
+    private static void DrawBoundingBoxAndLabels(
+        DrawingContext context,
+        Matrix4x4Data transform,
+        double width,
+        double height,
+        Chart3DParams p,
+        double minX,
+        double maxX,
+        double minY,
+        double maxY,
+        double minZ,
+        double maxZ)
     {
         Point3D[] boxCorners = new Point3D[]
         {
@@ -398,14 +409,16 @@ public class Chart3DControl : Control
 
         if (!string.IsNullOrEmpty(p.XLabel))
         {
-            var xText = CreateText(p.XLabel + " (X)", 12, FontWeight.Bold, Brushes.DarkBlue);
+            string xLabelStr = $"{p.XLabel} [{Chart2DControl.FormatNumber(minX)}..{Chart2DControl.FormatNumber(maxX)}]";
+            var xText = CreateText(xLabelStr, 12, FontWeight.Bold, Brushes.DarkBlue);
             Point midX = new Point((screenCorners[0].X + screenCorners[1].X) / 2, (screenCorners[0].Y + screenCorners[1].Y) / 2 + 10);
             context.DrawText(xText, midX);
         }
 
         if (!string.IsNullOrEmpty(p.YLabel))
         {
-            var yText = CreateText(p.YLabel + " (Y)", 12, FontWeight.Bold, Brushes.DarkGreen);
+            string yLabelStr = $"{p.YLabel} [{Chart2DControl.FormatNumber(minY)}..{Chart2DControl.FormatNumber(maxY)}]";
+            var yText = CreateText(yLabelStr, 12, FontWeight.Bold, Brushes.DarkGreen);
             Point midY = new Point((screenCorners[0].X + screenCorners[3].X) / 2 - 25, (screenCorners[0].Y + screenCorners[3].Y) / 2 + 10);
             context.DrawText(yText, midY);
         }

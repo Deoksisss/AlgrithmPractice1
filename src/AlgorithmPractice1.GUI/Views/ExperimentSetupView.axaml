@@ -120,15 +120,15 @@
                                 <Grid ColumnDefinitions="*, *, *">
                                     <StackPanel Grid.Column="0" Spacing="2" Margin="0,0,6,0">
                                         <TextBlock Text="Макс. N:" FontSize="11" FontWeight="Medium" />
-                                        <NumericUpDown Value="{Binding NMax}" Minimum="1" Maximum="2000000" FormatString="F0" Height="28" />
+                                        <NumericUpDown Value="{Binding NMax}" Minimum="1" Maximum="2000000000" FormatString="F0" Height="28" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Spacing="2" Margin="0,0,6,0">
                                         <TextBlock Text="Шаг по N:" FontSize="11" FontWeight="Medium" />
-                                        <NumericUpDown Value="{Binding NStep}" Minimum="1" Maximum="500000" FormatString="F0" Height="28" />
+                                        <NumericUpDown Value="{Binding NStep}" Minimum="1" Maximum="1000000000" FormatString="F0" Height="28" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" Spacing="2">
                                         <TextBlock Text="Повторов:" FontSize="11" FontWeight="Medium" />
-                                        <NumericUpDown Value="{Binding RunsPerN}" Minimum="1" Maximum="50" FormatString="F0" Height="28" />
+                                        <NumericUpDown Value="{Binding RunsPerN}" Minimum="1" Maximum="100" FormatString="F0" Height="28" />
                                     </StackPanel>
                                 </Grid>
 
@@ -230,7 +230,7 @@
                             <TextBlock Text="Максимальный N:" FontWeight="SemiBold" FontSize="12" Foreground="#1F2328" />
                             <NumericUpDown Value="{Binding CommonNMax}"
                                            Minimum="1"
-                                           Maximum="2000000"
+                                           Maximum="2000000000"
                                            FormatString="F0" />
                             <TextBlock Text="Верхняя граница N (и M)" FontSize="10" Foreground="#656D76" />
                         </StackPanel>
@@ -240,7 +240,7 @@
                             <TextBlock Text="Шаг по N:" FontWeight="SemiBold" FontSize="12" Foreground="#1F2328" />
                             <NumericUpDown Value="{Binding CommonNStep}"
                                            Minimum="1"
-                                           Maximum="500000"
+                                           Maximum="1000000000"
                                            FormatString="F0" />
                             <TextBlock Text="Интервал точек сетки" FontSize="10" Foreground="#656D76" />
                         </StackPanel>
@@ -250,7 +250,7 @@
                             <TextBlock Text="Повторов на точку:" FontWeight="SemiBold" FontSize="12" Foreground="#1F2328" />
                             <NumericUpDown Value="{Binding CommonRunsPerN}"
                                            Minimum="1"
-                                           Maximum="50"
+                                           Maximum="100"
                                            FormatString="F0" />
                             <TextBlock Text="Для усреднения времени" FontSize="10" Foreground="#656D76" />
                         </StackPanel>
