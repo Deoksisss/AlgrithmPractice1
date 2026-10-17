@@ -21,8 +21,26 @@ public static class LeastSquaresSolver
             ComplexityFunctionType.Cubic => n * n * n,
             ComplexityFunctionType.Logarithmic => Math.Log2(Math.Max(1.0, n)),
             ComplexityFunctionType.Matrix3D => n * n * n,
+            ComplexityFunctionType.Faсtorial => EvaluateFactorial(n),
             _ => n
         };
+    }
+
+    /// <summary>
+    /// Безопасное вычисление факториала с защитой от переполнения типа double.
+    /// </summary>
+    private static double EvaluateFactorial(double n)
+    {
+        // Если n слишком велико, double уйдет в бесконечность, ломая МНК. Защищаемся.
+        if (n > 170) return 1e300; 
+
+        double fact = 1.0;
+        for (int i = 2; i <= (int)n; i++)
+        {
+            fact *= i;
+            if (fact > 1e300) return 1e300; // Защита от переполнения на ранних шагах
+        }
+        return fact;
     }
 
     /// <summary>
@@ -81,9 +99,6 @@ public static class LeastSquaresSolver
 
     /// <summary>
     /// Подбирает коэффициент C и вычисляет MSE для двумерного базиса f(n, m) = n^2 * m.
-    /// Модель: T_approx(n, m) = C * (n^2 * m).
-    /// Формула МНК: C = sum(T_i * n_i^2 * m_i) / sum((n_i^2 * m_i)^2).
-    /// MSE = (1/K) * sum((T_i - C * n_i^2 * m_i)^2).
     /// </summary>
     public static ApproximationResult FitMatrix3D(
         IReadOnlyList<(double N, double M, double EmpiricalValue)> points,
