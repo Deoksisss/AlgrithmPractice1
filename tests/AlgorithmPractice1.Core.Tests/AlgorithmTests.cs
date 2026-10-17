@@ -102,7 +102,19 @@ public class AlgorithmTests
         // Оптимизированный GnomeSort на 5000 элементов должен выполняться менее чем за 300 мс
         Assert.True(sw.ElapsedMilliseconds < 1000);
     }
-
+    
+    [Fact]
+    public void Permutations_StepsCountEqualsFactorial()
+    {
+        var alg = new PermutationsAlgorithm();
+        var ctx = new MeasurementContext();
+        var input = alg.GenerateTypedInput(4, new ExperimentConfig()); // 4! = 24
+    
+        alg.ExecuteTyped(input, ctx);
+    
+        Assert.Equal(24, ctx.StepCount); 
+    }
+    
     [Fact]
     public void LargeN_FastVectorAlgorithms_ExecuteQuicklyWithSmallStep()
     {

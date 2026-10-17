@@ -38,7 +38,12 @@ public enum ComplexityFunctionType
     /// <summary>
     /// f(n, m) = n^2 * m (O(n²·m), 3D матричное умножение)
     /// </summary>
-    Matrix3D
+    Matrix3D,
+    
+    /// <summary>
+    /// f(n) = n!
+    /// </summary>
+    Faсtorial
 }
 
 public static class ComplexityFunctionExtensions
@@ -52,6 +57,7 @@ public static class ComplexityFunctionExtensions
         ComplexityFunctionType.Cubic => "n3",
         ComplexityFunctionType.Logarithmic => "log_n",
         ComplexityFunctionType.Matrix3D => "n2_m",
+        ComplexityFunctionType.Faсtorial => "n!",
         _ => "n"
     };
 
@@ -64,6 +70,7 @@ public static class ComplexityFunctionExtensions
         "n3" => ComplexityFunctionType.Cubic,
         "log_n" => ComplexityFunctionType.Logarithmic,
         "n2_m" => ComplexityFunctionType.Matrix3D,
+        "n!" => ComplexityFunctionType.Faсtorial,
         _ => ComplexityFunctionType.Linear
     };
 
@@ -76,6 +83,7 @@ public static class ComplexityFunctionExtensions
         ComplexityFunctionType.Cubic => "O(n³)",
         ComplexityFunctionType.Logarithmic => "O(log n)",
         ComplexityFunctionType.Matrix3D => "O(n²·m)",
+        ComplexityFunctionType.Faсtorial => "O(n!)",
         _ => "O(n)"
     };
 }
