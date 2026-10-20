@@ -116,6 +116,134 @@ public class AlgorithmTests
     }
     
     [Fact]
+    public void Fibonacci_StepsCountEqualsN()
+    {
+        var alg = new FibonacciAlgorithm();
+        var ctx = new MeasurementContext();
+        int n = 10;                              // F(10) = 55
+
+        alg.ExecuteTyped(n, ctx);
+
+        // Итеративный вариант делает (n-1) шагов в цикле
+        Assert.Equal(9, ctx.StepCount);
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(10, 55)]
+    [InlineData(20, 6765)]
+    [InlineData(50, 12586269025)]
+    public void Fibonacci_ReturnsCorrectValue(int n, long expected)
+    {
+        var alg = new FibonacciAlgorithm();
+        long actual = alg.ExecuteTyped(n, null);
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(10, 55)]
+    [InlineData(20, 6765)]
+    public void FibonacciNaiveRecursive_ReturnsCorrectValue(int n, long expected)
+    {
+        var alg = new FibonacciNaiveRecursiveAlgorithm();
+        long actual = alg.ExecuteTyped(n, null);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void FibonacciNaiveRecursive_ExponentialStepCount()
+    {
+        var alg = new FibonacciNaiveRecursiveAlgorithm();
+        var ctx = new MeasurementContext();
+        
+        // Для n=10 количество вызовов функции должно быть 177 
+        // (это 2 * F(11) - 1, классическая формула для дерева вызовов)
+        alg.ExecuteTyped(10, ctx);
+        
+        Assert.Equal(177, ctx.StepCount); 
+    }
+    
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(10, 55)]
+    [InlineData(50, 12586269025)]
+    [InlineData(90, 2880067194370816120)] // Максимальное значение для long
+    public void FibonacciMemoized_ReturnsCorrectValue(int n, long expected)
+    {
+        var alg = new FibonacciMemoizedAlgorithm();
+        long actual = alg.ExecuteTyped(n, null);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void FibonacciMemoized_LinearStepCount()
+    {
+        var alg = new FibonacciMemoizedAlgorithm();
+        var ctx = new MeasurementContext();
+        int n = 90;
+
+        alg.ExecuteTyped(n, ctx);
+
+        // Благодаря мемоизации мы вычисляем каждое число ровно один раз (плюс проверки кэша).
+        // Количество шагов должно быть около N, а не экспоненциальным.
+        // Точно оно равно n (для n>=2).
+        Assert.Equal(89, ctx.StepCount); 
+    }
+    
+    [Fact]
+    public void FibonacciMemoized_ExecutionIsFast()
+    {
+        var alg = new FibonacciMemoizedAlgorithm();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        alg.ExecuteTyped(90, null);
+
+        sw.Stop();
+        // Мемоизация на 90 элементах должна работать за миллисекунды
+        Assert.True(sw.ElapsedMilliseconds < 50);
+    }
+    
+    [Fact]
+    public void Fibonacci_MemoizedIsMuchFasterThanNaive()
+    {
+        var naive = new FibonacciNaiveRecursiveAlgorithm();
+        var memo = new FibonacciMemoizedAlgorithm();
+        int n = 30; // 30 - хороший баланс, наивный уже тормозит, но еще не зависает
+
+        // Замер наивного
+        var swNaive = System.Diagnostics.Stopwatch.StartNew();
+        naive.ExecuteTyped(n, null);
+        swNaive.Stop();
+
+        // Замер с мемоизацией
+        var swMemo = System.Diagnostics.Stopwatch.StartNew();
+        memo.ExecuteTyped(n, null);
+        swMemo.Stop();
+
+        // Наивный должен быть как минимум в 50 раз медленнее на n=30
+        Assert.True(swNaive.ElapsedMilliseconds > swMemo.ElapsedMilliseconds * 50,
+            $"Наивный: {swNaive.ElapsedMilliseconds} мс, Мемо: {swMemo.ElapsedMilliseconds} мс");
+    }
+    
+    [Fact]
+    public void Fibonacci_ExecutionIsFast()
+    {
+        var alg = new FibonacciAlgorithm();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        // Для линейного алгоритма F(90) должен выполняться мгновенно
+        alg.ExecuteTyped(90, null);
+
+        sw.Stop();
+        Assert.True(sw.ElapsedMilliseconds < 50,
+            $"Fibonacci(90) выполнялся {sw.ElapsedMilliseconds} мс, ожидалось < 50 мс");
+    }
+    
+    [Fact]
     public void LargeN_FastVectorAlgorithms_ExecuteQuicklyWithSmallStep()
     {
         // Линейные и N*log(N) алгоритмы: N до 20000 с шагом 2000

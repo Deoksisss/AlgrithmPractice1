@@ -9,7 +9,7 @@ public enum ComplexityFunctionType
     /// f(n) = 1 (O(1))
     /// </summary>
     Constant,
-
+    Exponential,
     /// <summary>
     /// f(n) = n (O(n))
     /// </summary>
