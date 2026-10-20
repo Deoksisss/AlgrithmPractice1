@@ -114,7 +114,79 @@ public class AlgorithmTests
     
         Assert.Equal(24, ctx.StepCount); 
     }
-    
+
+        // ============================================================
+        // ТЕСТЫ ДЛЯ ФИБОНАЧЧИ
+        // ============================================================
+
+        [Fact]
+        public void Fibonacci_ProducesCorrectValues()
+        {
+            var alg = new FibonacciAlgorithm();
+            var config = new ExperimentConfig();
+
+            // Эталонные значения: F(0)=0, F(1)=1, F(2)=1, F(3)=2, F(4)=3, F(5)=5, F(10)=55, F(15)=610, F(20)=6765
+            var expected = new Dictionary<int, long>
+            {
+                { 0, 0 },
+                { 1, 1 },
+                { 2, 1 },
+                { 3, 2 },
+                { 4, 3 },
+                { 5, 5 },
+                { 10, 55 },
+                { 15, 610 },
+                { 20, 6765 }
+            };
+
+            foreach (var kvp in expected)
+            {
+                var input = alg.GenerateTypedInput(kvp.Key, config);
+                long result = alg.ExecuteTyped(input, null);
+                Assert.Equal(kvp.Value, result);
+            }
+        }
+
+        [Fact]
+        public void Fibonacci_ExponentialGrowth_StepsCountMatchesFormula()
+        {
+            // Для наивной рекурсии количество вызовов Fibonacci(n) = 2*F(n+1) - 1.
+            // Проверяем это на небольших n, чтобы убедиться, что сложность именно экспоненциальная.
+            var alg = new FibonacciAlgorithm();
+            var config = new ExperimentConfig();
+
+            // n=5: 2*F(6)-1 = 2*8-1 = 15 вызовов
+            // n=6: 2*F(7)-1 = 2*13-1 = 25 вызовов
+            // n=7: 2*F(8)-1 = 2*21-1 = 41 вызов
+            // n=8: 2*F(9)-1 = 2*34-1 = 67 вызовов
+            var cases = new[]
+            {
+                (N: 5, ExpectedSteps: 15L),
+                (N: 6, ExpectedSteps: 25L),
+                (N: 7, ExpectedSteps: 41L),
+                (N: 8, ExpectedSteps: 67L)
+            };
+
+            foreach (var (n, expectedSteps) in cases)
+            {
+                var ctx = new MeasurementContext();
+                var input = alg.GenerateTypedInput(n, config);
+                alg.ExecuteTyped(input, ctx);
+
+                Assert.Equal(expectedSteps, ctx.StepCount);
+            }
+        }
+
+        [Fact]
+        public void Fibonacci_RegisteredInRegistry()
+        {
+            // Проверяем, что алгоритм автоматически подхватился через рефлексию/регистрацию
+            var alg = AlgorithmRegistry.Instance.GetById("Fibonacci");
+            Assert.NotNull(alg);
+            Assert.IsType<FibonacciAlgorithm>(alg);
+            Assert.Equal(ComplexityFunctionType.Exponential, alg.TheoreticalComplexity);
+        }
+
     [Fact]
     public void Fibonacci_StepsCountEqualsN()
     {
