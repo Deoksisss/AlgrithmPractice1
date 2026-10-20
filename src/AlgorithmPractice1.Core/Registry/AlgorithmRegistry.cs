@@ -37,6 +37,7 @@ public sealed class AlgorithmRegistry
         Register(new PollardRhoAlgorithm());
         Register(new MillerRabinAlgorithm());
         Register(new PermutationsAlgorithm());
+        Register(new FibonacciIterativeAlgorithm())
 
         Register(new IterativeExponentiationAlgorithm());
         Register(new RecursiveExponentiationAlgorithm());
