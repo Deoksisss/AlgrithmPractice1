@@ -9,7 +9,7 @@ public enum ComplexityFunctionType
     /// f(n) = 1 (O(1))
     /// </summary>
     Constant,
-    Exponential,
+
     /// <summary>
     /// f(n) = n (O(n))
     /// </summary>
@@ -43,8 +43,8 @@ public enum ComplexityFunctionType
     /// <summary>
     /// f(n) = n!  (исправлена опечатка: русская 'с' -> английская 'c')
     /// </summary>
-    Factorial,
-
+    Faсtorial,
+    
     /// <summary>
     /// f(n) = 2^n (O(2^n), наивная рекурсия, Фибоначчи)
     /// </summary>
@@ -62,7 +62,7 @@ public static class ComplexityFunctionExtensions
         ComplexityFunctionType.Cubic => "n3",
         ComplexityFunctionType.Logarithmic => "log_n",
         ComplexityFunctionType.Matrix3D => "n2_m",
-        ComplexityFunctionType.Factorial => "n!",
+        ComplexityFunctionType.Faсtorial => "n!",
         ComplexityFunctionType.Exponential => "2_n",
         _ => "n"
     };
@@ -76,7 +76,7 @@ public static class ComplexityFunctionExtensions
         "n3" => ComplexityFunctionType.Cubic,
         "log_n" => ComplexityFunctionType.Logarithmic,
         "n2_m" => ComplexityFunctionType.Matrix3D,
-        "n!" => ComplexityFunctionType.Factorial,
+        "n!" => ComplexityFunctionType.Faсtorial,
         "2_n" => ComplexityFunctionType.Exponential,
         _ => ComplexityFunctionType.Linear
     };
@@ -90,7 +90,7 @@ public static class ComplexityFunctionExtensions
         ComplexityFunctionType.Cubic => "O(n³)",
         ComplexityFunctionType.Logarithmic => "O(log n)",
         ComplexityFunctionType.Matrix3D => "O(n²·m)",
-        ComplexityFunctionType.Factorial => "O(n!)",
+        ComplexityFunctionType.Faсtorial => "O(n!)",
         ComplexityFunctionType.Exponential => "O(2^n)",
         _ => "O(n)"
     };
