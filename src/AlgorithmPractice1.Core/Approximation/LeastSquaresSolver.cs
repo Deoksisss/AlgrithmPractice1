@@ -22,6 +22,7 @@ public static class LeastSquaresSolver
             ComplexityFunctionType.Logarithmic => Math.Log2(Math.Max(1.0, n)),
             ComplexityFunctionType.Matrix3D => n * n * n,
             ComplexityFunctionType.Faсtorial => EvaluateFactorial(n),
+            ComplexityFunctionType.Exponential => Math.Pow(2, n),
             _ => n
         };
     }
