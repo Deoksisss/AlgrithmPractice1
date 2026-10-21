@@ -148,11 +148,11 @@ public class AlgorithmTests
         }
 
         [Fact]
-        public void Fibonacci_ExponentialGrowth_StepsCountMatchesFormula()
+        public void FibonacciNaiveRecursive_ExponentialGrowth_StepsCountMatchesFormula()
         {
             // Для наивной рекурсии количество вызовов Fibonacci(n) = 2*F(n+1) - 1.
             // Проверяем это на небольших n, чтобы убедиться, что сложность именно экспоненциальная.
-            var alg = new FibonacciAlgorithm();
+            var alg = new FibonacciNaiveRecursiveAlgorithm();
             var config = new ExperimentConfig();
 
             // n=5: 2*F(6)-1 = 2*8-1 = 15 вызовов
@@ -184,7 +184,12 @@ public class AlgorithmTests
             var alg = AlgorithmRegistry.Instance.GetById("Fibonacci");
             Assert.NotNull(alg);
             Assert.IsType<FibonacciAlgorithm>(alg);
-            Assert.Equal(ComplexityFunctionType.Exponential, alg.TheoreticalComplexity);
+            Assert.Equal(ComplexityFunctionType.Linear, alg.TheoreticalComplexity);
+
+            var naiveAlg = AlgorithmRegistry.Instance.GetById("FibonacciNaiveRecursive");
+            Assert.NotNull(naiveAlg);
+            Assert.IsType<FibonacciNaiveRecursiveAlgorithm>(naiveAlg);
+            Assert.Equal(ComplexityFunctionType.Exponential, naiveAlg.TheoreticalComplexity);
         }
 
     [Fact]
@@ -261,9 +266,8 @@ public class AlgorithmTests
         alg.ExecuteTyped(n, ctx);
 
         // Благодаря мемоизации мы вычисляем каждое число ровно один раз (плюс проверки кэша).
-        // Количество шагов должно быть около N, а не экспоненциальным.
-        // Точно оно равно n (для n>=2).
-        Assert.Equal(89, ctx.StepCount); 
+        // Для n = 90 вычисляются все значения от 0 до 90 (ровно 91 шаг).
+        Assert.Equal(91, ctx.StepCount); 
     }
     
     [Fact]
@@ -543,5 +547,59 @@ public class AlgorithmTests
             Assert.Equal(n, res.GetLength(1));
             Assert.True(sw.ElapsedMilliseconds < 500);
         }
+    }
+
+    [Fact]
+    public void InductiveSubsets_CorrectSubsetsAndOrder()
+    {
+        var alg = new InductiveSubsetsAlgorithm();
+        int[] input = { 0, 1, 2, 3 };
+        var ctx = new MeasurementContext();
+
+        var subsets = alg.ExecuteTyped(input, ctx);
+
+        Assert.Equal(16, subsets.Count);
+        Assert.Equal(16, ctx.StepCount);
+
+        // Проверяем точный порядок индуктивной генерации:
+        // []
+        Assert.Equal(Array.Empty<int>(), subsets[0]);
+        // [0]
+        Assert.Equal(new[] { 0 }, subsets[1]);
+        // [1], [0, 1]
+        Assert.Equal(new[] { 1 }, subsets[2]);
+        Assert.Equal(new[] { 0, 1 }, subsets[3]);
+        // [2], [0, 2], [1, 2], [0, 1, 2]
+        Assert.Equal(new[] { 2 }, subsets[4]);
+        Assert.Equal(new[] { 0, 2 }, subsets[5]);
+        Assert.Equal(new[] { 1, 2 }, subsets[6]);
+        Assert.Equal(new[] { 0, 1, 2 }, subsets[7]);
+        // [3], [0, 3], [1, 3], [0, 1, 3], [2, 3], [0, 2, 3], [1, 2, 3], [0, 1, 2, 3]
+        Assert.Equal(new[] { 3 }, subsets[8]);
+        Assert.Equal(new[] { 0, 3 }, subsets[9]);
+        Assert.Equal(new[] { 1, 3 }, subsets[10]);
+        Assert.Equal(new[] { 0, 1, 3 }, subsets[11]);
+        Assert.Equal(new[] { 2, 3 }, subsets[12]);
+        Assert.Equal(new[] { 0, 2, 3 }, subsets[13]);
+        Assert.Equal(new[] { 1, 2, 3 }, subsets[14]);
+        Assert.Equal(new[] { 0, 1, 2, 3 }, subsets[15]);
+    }
+
+    [Fact]
+    public void InductiveSubsets_RegisteredInRegistryAndGeneratesSequentialInputs()
+    {
+        var alg = AlgorithmRegistry.Instance.GetById("InductiveSubsets");
+        Assert.NotNull(alg);
+        Assert.Equal(AlgorithmCategory.Individual, alg.Category);
+        Assert.Equal(ComplexityFunctionType.Exponential, alg.TheoreticalComplexity);
+
+        var typedAlg = Assert.IsType<InductiveSubsetsAlgorithm>(alg);
+        var input5 = typedAlg.GenerateTypedInput(5, typedAlg.DefaultConfig);
+        Assert.Equal(new[] { 0, 1, 2, 3, 4 }, input5);
+
+        var emptyInput = typedAlg.GenerateTypedInput(0, typedAlg.DefaultConfig);
+        var emptyRes = typedAlg.ExecuteTyped(emptyInput, null);
+        Assert.Single(emptyRes);
+        Assert.Empty(emptyRes[0]);
     }
 }
