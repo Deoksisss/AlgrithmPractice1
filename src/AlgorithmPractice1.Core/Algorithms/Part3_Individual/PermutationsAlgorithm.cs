@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using AlgorithmPractice1.Core.Abstractions;
+﻿using AlgorithmPractice1.Core.Abstractions;
 using AlgorithmPractice1.Core.Models;
 
 namespace AlgorithmPractice1.Core.Algorithms.Part3_Individual;
@@ -36,11 +35,11 @@ public sealed class PermutationsAlgorithm : AlgorithmBase<int[], long>
     public override long ExecuteTyped(int[] input, MeasurementContext? context)
     {
         long count = 0;
-        Permute(input, 0, ref count, context);
+        Permute(input, 0, count, context);
         return count;
     }
 
-    private void Permute(int[] input, int start, ref long count, MeasurementContext? context)
+    private void Permute(int[] input, int start,long count, MeasurementContext? context)
     {
         if (start == input.Length - 1)
         {
@@ -48,11 +47,11 @@ public sealed class PermutationsAlgorithm : AlgorithmBase<int[], long>
             context?.IncrementSteps();
             return;
         }
-
+        
         for (int i = start; i < input.Length; i++)
         {
             Swap(input, start, i);
-            Permute(input, start + 1, ref count, context);
+            OutputCallTree(()=> Permute(input, start + 1, count, context));
             Swap(input, start, i);
         }
     }
