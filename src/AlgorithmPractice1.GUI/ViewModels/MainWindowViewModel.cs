@@ -14,6 +14,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public ExperimentSetupViewModel Setup { get; }
     public ExperimentProgressViewModel Progress { get; }
     public HistoryViewModel History { get; }
+    
+    public VisualizationViewModel Visualization { get; }
 
     [ObservableProperty]
     private int _selectedTabIndex;
@@ -21,6 +23,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         ExperimentRunner experimentRunner,
         ISessionRepository sessionRepository)
+    
     {
         _experimentRunner = experimentRunner;
 
@@ -30,6 +33,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         Setup.StartExperimentRequested += OnStartExperiment;
         Progress.NavigateToResultsRequested += OnNavigateToResults;
+        Visualization = new VisualizationViewModel();
     }
 
     public async Task InitializeAsync()

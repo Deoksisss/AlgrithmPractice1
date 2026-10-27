@@ -88,20 +88,6 @@ public abstract class AlgorithmBase<TInput, TOutput> : IAlgorithm<TInput, TOutpu
     public object? Execute(object input, MeasurementContext? context) =>
         ExecuteTyped((TInput)input, context);
     
-    public List<String> OutputCallTree (Expression<Action> expression)
-    {
-        var methodCall = expression.Body as MethodCallExpression;
-        var methodInfo = methodCall?.Method;
-        var param = methodInfo?.GetParameters();
-        List<String> result = new List<String>();
-        for (int i = 0; i < param.Length; i++)
-        {
-            result.Add($"{param[i]} = {GetValueFromExpression(methodCall.Arguments[i])}");
-        }
-        expression.Compile();
-        return result;
-    }
-    
     private object? GetValueFromExpression(Expression expr)
     {
         if (expr is ConstantExpression constant)

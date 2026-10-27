@@ -1,0 +1,51 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:AlgorithmPractice1.GUI.Controls"
+             x:Class="AlgorithmPractice1.GUI.Views.VisualizationView"
+             Background="White"> <!-- Белый фон всей вкладки -->
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+        
+        <!-- Верхняя панель -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15" Margin="0,0,0,15">
+            <TextBlock Text="Алгоритм:" VerticalAlignment="Center" FontSize="14" Foreground="Black"/>
+            <ComboBox ItemsSource="{Binding AvailableAlgorithms}" 
+                      SelectedItem="{Binding SelectedAlgorithm}" 
+                      Width="250">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding DisplayName}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="N =" VerticalAlignment="Center" FontSize="14" Foreground="Black"/>
+            <NumericUpDown Value="{Binding N}" Minimum="2" Maximum="5" Increment="1" Width="100"/>
+            
+            <Button Content="Построить дерево" Command="{Binding BuildTreeCommand}" 
+                    Background="#0055D4" Foreground="White" Padding="15,5" CornerRadius="4"/>
+                    
+            <Button Content="Сбросить вид" Command="{Binding ResetCommand}" 
+                    Background="#F0F0F0" Foreground="Black" Padding="15,5" CornerRadius="4"/>
+        </StackPanel>
+
+        <!-- Холст -->
+        <Border Grid.Row="1" BorderBrush="#E0E0E0" BorderThickness="1" Background="White" ClipToBounds="True">
+            <controls:CallTreeCanvas x:Name="CanvasControl"/>
+        </Border>
+
+        <!-- Нижняя панель -->
+        <Grid Grid.Row="2" ColumnDefinitions="*, Auto" Margin="0,15,0,0">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Текущий массив:" VerticalAlignment="Center" FontSize="14" Foreground="Gray"/>
+                <Border Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="1" Padding="10,5" CornerRadius="4">
+                    <TextBlock Text="{Binding CurrentArrayText}" Foreground="Black" FontFamily="Consolas" FontSize="16"/>
+                </Border>
+            </StackPanel>
+            
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                <Button Content="◀ Назад" Command="{Binding PrevNodeCommand}" Background="#F0F0F0" Foreground="Black"/>
+                <Button Content="Вперед ▶" Command="{Binding NextNodeCommand}" Background="#F0F0F0" Foreground="Black"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>
