@@ -18,10 +18,23 @@ public class CallTreeTests
         Assert.True(new RecursiveExponentiationAlgorithm().IsRecursive);
         Assert.True(new BinaryExponentiationAlgorithm().IsRecursive);
         Assert.True(new QuickSortAlgorithm().IsRecursive);
+        Assert.True(new InductiveSubsetsAlgorithm().IsRecursive);
 
         Assert.False(new BubbleSortAlgorithm().IsRecursive);
         Assert.False(new FibonacciIterativeAlgorithm().IsRecursive);
-        Assert.False(new InductiveSubsetsAlgorithm().IsRecursive);
+    }
+
+    [Fact]
+    public void InductiveSubsets_BuildsCallTree()
+    {
+        var alg = new InductiveSubsetsAlgorithm();
+        var root = alg.GenerateCallTree(3);
+
+        Assert.NotNull(root);
+        Assert.Equal(alg.DisplayName, root.MethodName);
+        Assert.NotEmpty(root.Children);
+        // Рекурсивные вызовы n=3 -> n=2 -> n=1 -> n=0
+        Assert.True(root.SubtreeCount >= 4);
     }
 
     [Fact]
