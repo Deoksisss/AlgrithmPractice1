@@ -1,4 +1,5 @@
 using AlgorithmPractice1.Core.Abstractions;
+using AlgorithmPractice1.Core.CallTree;
 using AlgorithmPractice1.Core.Models;
 
 namespace AlgorithmPractice1.Core.Algorithms.Part3_Individual;
@@ -16,6 +17,7 @@ public sealed class FibonacciNaiveRecursiveAlgorithm : AlgorithmBase<int, long>
     public override AlgorithmCategory Category => AlgorithmCategory.Individual;
     public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Exponential;
+    public override bool IsRecursive => true;
 
     public override ExperimentConfig DefaultConfig => new()
     {
@@ -31,10 +33,16 @@ public sealed class FibonacciNaiveRecursiveAlgorithm : AlgorithmBase<int, long>
         return Fib(input, context);
     }
 
-    private static long Fib(int n, MeasurementContext? ctx)
+    private long Fib(int n, MeasurementContext? ctx)
     {
         ctx?.IncrementSteps();
         if (n <= 1) return n;
+
+        if (CallTreeTracker.IsTracking)
+        {
+            return OutputCallTree(() => Fib(n - 1, ctx)) + OutputCallTree(() => Fib(n - 2, ctx));
+        }
+
         return Fib(n - 1, ctx) + Fib(n - 2, ctx);
     }
 }

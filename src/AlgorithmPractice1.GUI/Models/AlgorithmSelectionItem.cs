@@ -58,6 +58,7 @@ public partial class AlgorithmSelectionItem : ObservableObject
     public bool HasM => Algorithm.Category == AlgorithmCategory.Matrices;
     public bool HasK => Algorithm.Id == "MillerRabin";
     public bool HasX => Algorithm.Category == AlgorithmCategory.Exponentiation || Algorithm.Id.Contains("Polynomial");
+    public bool IsRecursive => Algorithm.IsRecursive;
 
     partial void OnNMaxChanged(int value)
     {

@@ -1,4 +1,5 @@
 using AlgorithmPractice1.Core.Abstractions;
+using AlgorithmPractice1.Core.CallTree;
 using AlgorithmPractice1.Core.Models;
 
 namespace AlgorithmPractice1.Core.Algorithms.Part1_Vectors;
@@ -14,6 +15,7 @@ public sealed class QuickSortAlgorithm : AlgorithmBase<int[], int[]>
     public override AlgorithmCategory Category => AlgorithmCategory.Vectors;
     public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Linearithmic;
+    public override bool IsRecursive => true;
 
     public override ExperimentConfig DefaultConfig => new()
     {
@@ -42,7 +44,7 @@ public sealed class QuickSortAlgorithm : AlgorithmBase<int[], int[]>
         return input;
     }
 
-    private static void Sort(int[] a, int left, int right)
+    private void Sort(int[] a, int left, int right)
     {
         if (left >= right) return;
 
@@ -63,7 +65,15 @@ public sealed class QuickSortAlgorithm : AlgorithmBase<int[], int[]>
             }
         }
 
-        Sort(a, left, j);
-        Sort(a, i, right);
+        if (CallTreeTracker.IsTracking)
+        {
+            OutputCallTree(() => Sort(a, left, j));
+            OutputCallTree(() => Sort(a, i, right));
+        }
+        else
+        {
+            Sort(a, left, j);
+            Sort(a, i, right);
+        }
     }
 }

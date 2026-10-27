@@ -1,0 +1,253 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:AlgorithmPractice1.GUI.ViewModels"
+             xmlns:controls="clr-namespace:AlgorithmPractice1.GUI.Controls"
+             xmlns:tree="clr-namespace:AlgorithmPractice1.Core.CallTree;assembly=AlgorithmPractice1.Core"
+             x:Class="AlgorithmPractice1.GUI.Views.CallTreeView"
+             x:DataType="vm:CallTreeViewModel"
+             Background="#F8FAFC">
+
+    <Grid ColumnDefinitions="320, *">
+        <!-- Левая панель: выбор пакета и выбор алгоритма (строго 1 алгоритм) -->
+        <Border Grid.Column="0"
+                Background="#FFFFFF"
+                BorderBrush="#E2E8F0"
+                BorderThickness="0,0,1,0"
+                Padding="16">
+            <Grid RowDefinitions="Auto, Auto, *, Auto">
+                <!-- Заголовок и выбор пакета -->
+                <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,12">
+                    <TextBlock Text="🌲 Дерево рекурсивных вызовов"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="#0F172A" />
+
+                    <TextBlock Text="Выберите завершённый пакет или отдельный алгоритм:"
+                               FontSize="11"
+                               Foreground="#64748B" />
+
+                    <ComboBox ItemsSource="{Binding Batches}"
+                              SelectedItem="{Binding SelectedBatch}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayText}" FontSize="12" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <Button Content="Показать все алгоритмы"
+                            Command="{Binding ShowAllAvailableAlgorithmsCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            FontSize="11"
+                            Padding="6,4"
+                            Classes="accent" />
+                </StackPanel>
+
+                <!-- Заголовок списка алгоритмов -->
+                <StackPanel Grid.Row="1" Spacing="4" Margin="0,0,0,8">
+                    <TextBlock Text="Алгоритмы (выберите 1 для отображения):"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#334155" />
+                </StackPanel>
+
+                <!-- Список рекурсивных алгоритмов с одиночным выбором -->
+                <ScrollViewer Grid.Row="2">
+                    <ListBox ItemsSource="{Binding DisplayedAlgorithms}"
+                             SelectedItem="{Binding SelectedAlgorithm, Mode=TwoWay}"
+                             SelectionMode="Single"
+                             Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="8,6"
+                                        Margin="0,2"
+                                        CornerRadius="6"
+                                        Background="#F8FAFC"
+                                        BorderBrush="#E2E8F0"
+                                        BorderThickness="1">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       FontSize="12"
+                                                       FontWeight="Medium"
+                                                       Foreground="#0F172A"
+                                                       TextWrapping="Wrap" />
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <Border Background="#F3E8FF"
+                                                        CornerRadius="3"
+                                                        Padding="4,1">
+                                                    <TextBlock Text="рекурсия"
+                                                               FontSize="9"
+                                                               FontWeight="Bold"
+                                                               Foreground="#7E22CE" />
+                                                </Border>
+                                                <Border Background="#E2E8F0"
+                                                        CornerRadius="3"
+                                                        Padding="4,1">
+                                                    <TextBlock Text="{Binding ComplexityDisplayName}"
+                                                               FontSize="9"
+                                                               Foreground="#475569" />
+                                                </Border>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <RadioButton Grid.Column="1"
+                                                     IsChecked="{Binding IsSelected, Mode=OneWay}"
+                                                     VerticalAlignment="Center"
+                                                     IsHitTestVisible="False" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+
+                <!-- Нижняя панель: настройка размера входа N -->
+                <Border Grid.Row="3"
+                        Margin="0,12,0,0"
+                        Padding="12"
+                        Background="#F1F5F9"
+                        CornerRadius="8">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="⚙️ Параметр размера входа (N)"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="#1E293B" />
+                        <Grid ColumnDefinitions="*, Auto">
+                            <NumericUpDown Grid.Column="0"
+                                           Value="{Binding InputN}"
+                                           Minimum="{Binding MinN}"
+                                           Maximum="{Binding MaxN}"
+                                           FormatString="F0"
+                                           Height="32"
+                                           Margin="0,0,8,0" />
+                            <Button Grid.Column="1"
+                                    Content="🔄 Обновить"
+                                    Command="{Binding RebuildTreeCommand}"
+                                    Height="32"
+                                    Padding="10,0" />
+                        </Grid>
+                        <TextBlock Text="Для рекурсивных деревьев N ограничен безопасным диапазоном во избежание зависания UI."
+                                   FontSize="10"
+                                   Foreground="#64748B"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Правая область: верхняя статистика и отображение дерева (Граф / Список) -->
+        <Grid Grid.Column="1" RowDefinitions="Auto, *">
+            <!-- Верхняя панель со статистикой и переключателем вида -->
+            <Border Grid.Row="0"
+                    Background="#FFFFFF"
+                    BorderBrush="#E2E8F0"
+                    BorderThickness="0,0,0,1"
+                    Padding="16,10">
+                <Grid ColumnDefinitions="*, Auto">
+                    <!-- Заголовок и бейджи метрик -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding SelectedAlgorithm.DisplayName, FallbackValue='Алгоритм'}"
+                                   FontSize="15"
+                                   FontWeight="Bold"
+                                   Foreground="#0F172A"
+                                   VerticalAlignment="Center" />
+
+                        <Border Background="#EDE9FE" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TotalCalls, StringFormat='{}Вызовов: {0}'}"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#6D28D9" />
+                        </Border>
+
+                        <Border Background="#E0F2FE" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding MaxDepth, StringFormat='{}Глубина: {0}'}"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#0369A1" />
+                        </Border>
+
+                        <Border Background="#DCFCE7" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding GenerationTimeMs, StringFormat='{}Время: {0:F1} мс'}"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#15803D" />
+                        </Border>
+
+                        <Border Background="#FEF3C7" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                                IsVisible="{Binding IsTruncated}">
+                            <TextBlock Text="⚠️ Частично усечено (>2000)"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#B45309" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Переключатели вида и зума -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <!-- Переключение Граф / Список -->
+                        <Border Background="#F1F5F9" CornerRadius="6" Padding="2">
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <Button Content="📊 Граф"
+                                        Command="{Binding ToggleViewModeCommand}"
+                                        CommandParameter="graph"
+                                        Padding="8,4"
+                                        FontSize="11" />
+                                <Button Content="📁 Список"
+                                        Command="{Binding ToggleViewModeCommand}"
+                                        CommandParameter="list"
+                                        Padding="8,4"
+                                        FontSize="11" />
+                            </StackPanel>
+                        </Border>
+
+                        <Separator Width="1" Height="20" Background="#CBD5E1" Margin="4,0" />
+
+                        <!-- Кнопки управления зумом графа -->
+                        <Button x:Name="ZoomOutBtn" Content="➖" ToolTip.Tip="Уменьшить масштаб" Padding="8,4" />
+                        <Button x:Name="ResetZoomBtn" Content="100%" ToolTip.Tip="Сбросить масштаб и центрировать" Padding="8,4" FontSize="11" />
+                        <Button x:Name="ZoomInBtn" Content="➕" ToolTip.Tip="Увеличить масштаб" Padding="8,4" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Основная область отображения -->
+            <Panel Grid.Row="1">
+                <!-- 1. Интерактивный граф вызовов -->
+                <controls:CallTreeGraphControl x:Name="GraphControl"
+                                              RootNode="{Binding CallTreeRoot}"
+                                              IsVisible="{Binding IsGraphMode}" />
+
+                <!-- 2. Иерархический список (TreeView) -->
+                <ScrollViewer IsVisible="{Binding !IsGraphMode}" Padding="16">
+                    <TreeView ItemsSource="{Binding CallTreeRoot.Children}">
+                        <TreeView.ItemTemplate>
+                            <TreeDataTemplate ItemsSource="{Binding Children}">
+                                <Border Background="#FFFFFF"
+                                        BorderBrush="#E2E8F0"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="8,4"
+                                        Margin="0,2">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Border Background="#EDE9FE" CornerRadius="3" Padding="4,1">
+                                            <TextBlock Text="{Binding CallId, StringFormat='#{0}'}"
+                                                       FontSize="9"
+                                                       FontWeight="Bold"
+                                                       Foreground="#6D28D9" />
+                                        </Border>
+                                        <TextBlock Text="{Binding DisplayText}"
+                                                   FontSize="12"
+                                                   FontFamily="Cascadia Code, Consolas, Courier New, monospace"
+                                                   Foreground="#0F172A" />
+                                    </StackPanel>
+                                </Border>
+                            </TreeDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </ScrollViewer>
+            </Panel>
+        </Grid>
+    </Grid>
+</UserControl>

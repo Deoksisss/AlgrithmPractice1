@@ -22,13 +22,30 @@
                                   Margin="0,0,6,0"
                                   VerticalAlignment="Center" />
 
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding Algorithm.DisplayName}"
-                                   FontSize="12"
-                                   FontWeight="Medium"
-                                   Foreground="#1F2328"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis" />
+                        <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Algorithm.DisplayName}"
+                                       FontSize="12"
+                                       FontWeight="Medium"
+                                       Foreground="#1F2328"
+                                       TextTrimming="CharacterEllipsis" />
+                            <Border IsVisible="{Binding IsRecursive}"
+                                    Background="#F3E8FF"
+                                    BorderBrush="#A855F7"
+                                    BorderThickness="1"
+                                    CornerRadius="3"
+                                    Padding="4,1"
+                                    Margin="0,2,0,0"
+                                    HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                    <TextBlock Text="🔄" FontSize="9" VerticalAlignment="Center" />
+                                    <TextBlock Text="рекурсия"
+                                               FontSize="9"
+                                               FontWeight="Bold"
+                                               Foreground="#7E22CE"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
 
                         <!-- Бейдж кастомных настроек -->
                         <Border Grid.Column="2"

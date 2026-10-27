@@ -45,8 +45,10 @@ public class BatchAndAxisFormattingTests
         public MeasurementType MeasurementType => MeasurementType.Time;
         public ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Linear;
         public ExperimentConfig DefaultConfig => new();
+        public bool IsRecursive => false;
         public object GenerateInput(int n, ExperimentConfig config) => new double[n];
         public object Execute(object input, MeasurementContext? context) => 1.0;
+        public AlgorithmPractice1.Core.CallTree.CallTreeNode? GenerateCallTree(int n, ExperimentConfig? config = null) => null;
     }
 
     [Fact]
