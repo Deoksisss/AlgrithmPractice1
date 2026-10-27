@@ -35,6 +35,14 @@ public partial class ChartDisplayView : UserControl
         {
             RenderChart(model);
         }
+        else
+        {
+            var host = GetChartHost();
+            if (host != null)
+            {
+                host.Child = null;
+            }
+        }
     }
 
     private Border? GetChartHost()

@@ -1,5 +1,10 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using AlgorithmPractice1.Core.Execution;
 using AlgorithmPractice1.Core.Models;
+using AlgorithmPractice1.GUI.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -7,78 +12,63 @@ namespace AlgorithmPractice1.GUI.ViewModels;
 
 public partial class ExperimentProgressViewModel : ViewModelBase
 {
-    public ObservableCollection<AlgorithmProgressItem> Items { get; } = new();
+    private int _batchCounter;
+
+    public ObservableCollection<BatchProgressItemViewModel> Batches { get; } = new();
 
     [ObservableProperty]
-    private int _completedCount;
+    private bool _hasBatches;
 
     [ObservableProperty]
-    private int _totalCount;
-
-    [ObservableProperty]
-    private string _fractionText = "0/0";
-
-    [ObservableProperty]
-    private double _percentage;
-
-    [ObservableProperty]
-    private bool _isRunning;
-
-    [ObservableProperty]
-    private bool _isCompleted;
-
-    [ObservableProperty]
-    private string _statusSummary = "Ожидание запуска эксперимента";
+    private string _queueSummary = "Нет запущенных пакетов.";
 
     public event Action? NavigateToResultsRequested;
 
-    public void Reset(int totalAlgorithms)
+    public BatchProgressItemViewModel AddBatch(string? label, IReadOnlyList<ExperimentRequest> requests)
     {
-        Items.Clear();
-        TotalCount = totalAlgorithms;
-        CompletedCount = 0;
-        FractionText = $"0/{totalAlgorithms}";
-        Percentage = 0.0;
-        IsRunning = true;
-        IsCompleted = false;
-        StatusSummary = $"Выполняется пакетный запуск {totalAlgorithms} алгоритмов...";
+        _batchCounter++;
+        var batchVm = new BatchProgressItemViewModel(_batchCounter, label, requests);
+        batchVm.RequestNavigateToResults += () => NavigateToResultsRequested?.Invoke();
+
+        Batches.Add(batchVm);
+        HasBatches = true;
+        UpdateQueueSummary();
+
+        batchVm.PropertyChanged += (_, _) => UpdateQueueSummary();
+
+        return batchVm;
     }
 
-    public void UpdateProgress(SessionProgressUpdate update)
+    public void UpdateQueueSummary()
     {
-        TotalCount = update.TotalAlgorithms;
-        CompletedCount = update.CompletedAlgorithms;
-        FractionText = update.ProgressFraction;
-        Percentage = update.Percentage;
+        int running = Batches.Count(b => b.IsRunning);
+        int queued = Batches.Count(b => b.IsQueued);
+        int completed = Batches.Count(b => b.IsCompleted);
 
-        // Синхронизируем коллекцию элементов
-        if (Items.Count != update.Items.Count)
+        if (Batches.Count == 0)
         {
-            Items.Clear();
-            foreach (var itm in update.Items)
-            {
-                Items.Add(itm);
-            }
+            QueueSummary = "Нет активных пакетов.";
+        }
+        else if (running > 0 || queued > 0)
+        {
+            QueueSummary = $"Активно: {running} выполняется, {queued} в очереди ожидания ({completed} завершено).";
         }
         else
         {
-            for (int i = 0; i < update.Items.Count; i++)
-            {
-                var src = update.Items[i];
-                var dst = Items[i];
-                dst.Status = src.Status;
-                dst.CurrentN = src.CurrentN;
-                dst.TotalNCount = src.TotalNCount;
-                dst.Details = src.Details;
-            }
+            QueueSummary = $"Все пакеты ({completed}) успешно выполнены!";
         }
+    }
 
-        if (CompletedCount >= TotalCount && TotalCount > 0)
+    [RelayCommand]
+    public void ClearCompletedBatches()
+    {
+        var completed = Batches.Where(b => b.IsCompleted).ToList();
+        foreach (var b in completed)
         {
-            IsRunning = false;
-            IsCompleted = true;
-            StatusSummary = "Пакетный запуск успешно завершён!";
+            Batches.Remove(b);
         }
+        HasBatches = Batches.Count > 0;
+        UpdateQueueSummary();
     }
 
     [RelayCommand]

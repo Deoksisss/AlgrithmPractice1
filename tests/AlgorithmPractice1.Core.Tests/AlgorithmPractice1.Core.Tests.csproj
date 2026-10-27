@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AlgorithmPractice1.Core\AlgorithmPractice1.Core.csproj" />
+    <ProjectReference Include="..\..\src\AlgorithmPractice1.GUI\AlgorithmPractice1.GUI.csproj" />
   </ItemGroup>
 
 </Project>

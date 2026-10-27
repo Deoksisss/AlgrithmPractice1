@@ -1,21 +1,30 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using AlgorithmPractice1.Core.Data;
 using AlgorithmPractice1.Core.Models;
-using AlgorithmPractice1.Core.Registry;
 using AlgorithmPractice1.GUI.Models;
 using AlgorithmPractice1.GUI.Services;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Avalonia.Threading;
 
 namespace AlgorithmPractice1.GUI.ViewModels;
 
 public partial class HistoryViewModel : ViewModelBase
 {
     private readonly ISessionRepository _sessionRepository;
+    private readonly Dictionary<long, BenchmarkSession> _loadedSessionCache = new();
 
     public ObservableCollection<SessionListItemViewModel> Sessions { get; } = new();
-    public ObservableCollection<ChartDisplayModel> DisplayCharts { get; } = new();
+
+    [ObservableProperty]
+    private ChartDisplayModel? _activeChart;
+
+    [ObservableProperty]
+    private bool _hasActiveChart;
 
     [ObservableProperty]
     private string _statusMessage = "Загрузка истории сессий...";
@@ -27,7 +36,33 @@ public partial class HistoryViewModel : ViewModelBase
     private bool _isLoading;
 
     [ObservableProperty]
-    private int _selectedSessionsCount;
+    private int _selectedTestsCount;
+
+    [ObservableProperty]
+    private string _chartModeBadge = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasChartModeBadge;
+
+    public Action<Action>? DispatcherInvoker { get; set; }
+
+    private async Task RunOnUiAsync(Action action)
+    {
+        if (DispatcherInvoker != null)
+        {
+            DispatcherInvoker(action);
+            return;
+        }
+
+        if (Dispatcher.UIThread.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            await Dispatcher.UIThread.InvokeAsync(action);
+        }
+    }
 
     public HistoryViewModel(ISessionRepository sessionRepository)
     {
@@ -44,28 +79,47 @@ public partial class HistoryViewModel : ViewModelBase
     {
         IsLoading = true;
         StatusMessage = "Загрузка списка сессий...";
+        _loadedSessionCache.Clear();
 
         try
         {
             var sessions = await _sessionRepository.GetAllSessionsAsync();
 
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            await RunOnUiAsync(() =>
             {
                 Sessions.Clear();
                 foreach (var s in sessions)
                 {
-                    Sessions.Add(new SessionListItemViewModel(s, OnSessionSelectionChanged));
+                    Sessions.Add(new SessionListItemViewModel(s, OnTestSelectionChanged));
                 }
 
                 if (Sessions.Count > 0)
                 {
-                    // По умолчанию выбираем самую последнюю сессию
-                    Sessions[0].IsSelected = true;
+                    // Раскрываем самую свежую сессию
+                    var latest = Sessions[0];
+                    latest.IsExpanded = true;
+
+                    // Выбираем по умолчанию 2D тесты свежей сессии (или 3D если 2D нет)
+                    var initialTests = latest.Tests.Where(t => !t.Is3D).ToList();
+                    if (initialTests.Count == 0)
+                    {
+                        initialTests = latest.Tests.Where(t => t.Is3D).ToList();
+                    }
+
+                    foreach (var t in initialTests)
+                    {
+                        t.IsSelected = true;
+                    }
+
+                    OnTestSelectionChanged();
                 }
                 else
                 {
                     StatusMessage = "Сессий пока нет. Запустите эксперимент во вкладке 'Настройка'.";
-                    DisplayCharts.Clear();
+                    ActiveChart = null;
+                    HasActiveChart = false;
+                    ChartModeBadge = string.Empty;
+                    HasChartModeBadge = false;
                 }
             });
         }
@@ -79,120 +133,138 @@ public partial class HistoryViewModel : ViewModelBase
         }
     }
 
-    private async void OnSessionSelectionChanged()
+    internal void OnTestSelectionChanged()
+    {
+        _ = ApplyTestSelectionAsync();
+    }
+
+    public async Task ApplyTestSelectionAsync()
     {
         try
         {
-            var selected = Sessions.Where(s => s.IsSelected).ToList();
-            SelectedSessionsCount = selected.Count;
+            // 1. Собираем все выбранные тесты
+            var selectedTests = Sessions
+                .SelectMany(s => s.Tests)
+                .Where(t => t.IsSelected)
+                .ToList();
 
-            if (selected.Count == 0)
+            bool has2D = selectedTests.Any(t => !t.Is3D);
+            bool has3D = selectedTests.Any(t => t.Is3D);
+
+            // 2. Реализуем взаимное ограничение 2D и 3D (Requirement 4)
+            foreach (var sessionVm in Sessions)
             {
-                await Dispatcher.UIThread.InvokeAsync(() =>
+                bool anyTestEnabled = false;
+                foreach (var test in sessionVm.Tests)
                 {
-                    DisplayCharts.Clear();
+                    if (has2D)
+                    {
+                        test.IsEnabled = !test.Is3D;
+                    }
+                    else if (has3D)
+                    {
+                        test.IsEnabled = test.Is3D;
+                    }
+                    else
+                    {
+                        test.IsEnabled = true;
+                    }
+
+                    if (test.IsEnabled)
+                    {
+                        anyTestEnabled = true;
+                    }
+                }
+
+                sessionVm.IsSessionEnabled = anyTestEnabled;
+                sessionVm.UpdateCheckStateFromTests();
+            }
+
+            SelectedTestsCount = selectedTests.Count;
+
+            if (selectedTests.Count == 0)
+            {
+                await RunOnUiAsync(() =>
+                {
+                    ActiveChart = null;
+                    HasActiveChart = false;
                     IsComparisonMode = false;
-                    StatusMessage = "Выберите одну или несколько сессий в списке слева для просмотра графиков.";
+                    ChartModeBadge = string.Empty;
+                    HasChartModeBadge = false;
+                    StatusMessage = "Выберите один или несколько тестов в списке слева для отображения на общем графике.";
                 });
                 return;
             }
 
+            IsComparisonMode = selectedTests.Count > 1;
             IsLoading = true;
 
-            if (selected.Count == 1)
-            {
-                // Режим одной сессии
-                long sessionId = selected[0].Id;
-                var fullSession = await _sessionRepository.GetSessionByIdAsync(sessionId);
+            // 3. Загружаем полные данные измерений для выбранных сессий
+            var fullSelectedTests = new List<(BenchmarkSession Session, SessionAlgorithm SessionAlg)>();
+            var bySession = selectedTests.GroupBy(t => t.SessionId);
 
-                var newCharts = new List<ChartDisplayModel>();
-                string status = string.Empty;
+            foreach (var group in bySession)
+            {
+                long sessionId = group.Key;
+                if (!_loadedSessionCache.TryGetValue(sessionId, out var fullSession))
+                {
+                    fullSession = await _sessionRepository.GetSessionByIdAsync(sessionId);
+                    if (fullSession != null)
+                    {
+                        _loadedSessionCache[sessionId] = fullSession;
+                    }
+                }
 
                 if (fullSession != null)
                 {
-                    status = $"Сессия #{fullSession.Id} ({fullSession.Label ?? "без метки"}), {fullSession.Algorithms.Count} алгоритмов.";
-
-                    foreach (var sa in fullSession.Algorithms)
+                    foreach (var testVm in group)
                     {
-                        var algMeta = AlgorithmRegistry.Instance.FindById(sa.AlgorithmId);
-                        string displayName = algMeta?.DisplayName ?? sa.AlgorithmId;
-                        var chartModel = ChartBuilderService.BuildSingleAlgorithmChart(sa, displayName);
-                        newCharts.Add(chartModel);
-                    }
-                }
-
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    IsComparisonMode = false;
-                    StatusMessage = status;
-                    DisplayCharts.Clear();
-                    foreach (var c in newCharts)
-                    {
-                        DisplayCharts.Add(c);
-                    }
-                });
-            }
-            else
-            {
-                // Режим сравнения нескольких сессий
-                var fullSessions = new List<BenchmarkSession>();
-                foreach (var s in selected)
-                {
-                    var fs = await _sessionRepository.GetSessionByIdAsync(s.Id);
-                    if (fs != null) fullSessions.Add(fs);
-                }
-
-                // Находим все алгоритмы, присутствующие в выбранных сессиях
-                var allAlgIds = fullSessions
-                    .SelectMany(s => s.Algorithms.Select(a => a.AlgorithmId))
-                    .Distinct()
-                    .ToList();
-
-                var newCharts = new List<ChartDisplayModel>();
-
-                foreach (var algId in allAlgIds)
-                {
-                    var instances = new List<(BenchmarkSession Session, SessionAlgorithm SessionAlg)>();
-                    foreach (var sess in fullSessions)
-                    {
-                        var match = sess.Algorithms.FirstOrDefault(a => a.AlgorithmId == algId);
-                        if (match != null)
+                        var fullSa = fullSession.Algorithms.FirstOrDefault(a => a.Id == testVm.Algorithm.Id)
+                                     ?? fullSession.Algorithms.FirstOrDefault(a => a.AlgorithmId == testVm.AlgorithmId);
+                        if (fullSa != null)
                         {
-                            instances.Add((sess, match));
+                            fullSelectedTests.Add((fullSession, fullSa));
                         }
                     }
-
-                    if (instances.Count > 0)
-                    {
-                        var algMeta = AlgorithmRegistry.Instance.FindById(algId);
-                        string displayName = algMeta?.DisplayName ?? algId;
-                        var compChart = ChartBuilderService.BuildComparisonChart(algId, displayName, instances);
-                        newCharts.Add(compChart);
-                    }
                 }
-
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    IsComparisonMode = true;
-                    StatusMessage = $"Режим сравнения: выбрано {selected.Count} сессий.";
-                    DisplayCharts.Clear();
-                    foreach (var c in newCharts)
-                    {
-                        DisplayCharts.Add(c);
-                    }
-                });
             }
+
+            // 4. Строим единый общий график (Requirement 3)
+            var chart = ChartBuilderService.BuildUnifiedChart(fullSelectedTests);
+
+            await RunOnUiAsync(() =>
+            {
+                ActiveChart = chart;
+                HasActiveChart = chart != null;
+
+                if (has3D)
+                {
+                    ChartModeBadge = "3D режим";
+                    HasChartModeBadge = true;
+                    StatusMessage = selectedTests.Count == 1
+                        ? $"3D график: {selectedTests[0].DisplayName} (2D тесты заблокированы)."
+                        : $"3D график: сравнение {selectedTests.Count} тестов (2D тесты заблокированы).";
+                }
+                else
+                {
+                    ChartModeBadge = "2D режим";
+                    HasChartModeBadge = true;
+                    StatusMessage = selectedTests.Count == 1
+                        ? $"2D график: {selectedTests[0].DisplayName} (3D тесты заблокированы)."
+                        : $"2D график: {selectedTests.Count} тестов на одном полотне (3D тесты заблокированы).";
+                }
+            });
         }
         catch (Exception ex)
         {
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            await RunOnUiAsync(() =>
             {
                 StatusMessage = $"Ошибка загрузки графиков: {ex.Message}";
             });
         }
         finally
         {
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            await RunOnUiAsync(() =>
             {
                 IsLoading = false;
             });
@@ -202,12 +274,16 @@ public partial class HistoryViewModel : ViewModelBase
     [RelayCommand]
     private async Task DeleteSelectedSessions()
     {
-        var selected = Sessions.Where(s => s.IsSelected).ToList();
-        if (selected.Count == 0) return;
+        var sessionsToDelete = Sessions
+            .Where(s => s.IsSessionChecked == true || s.Tests.Any(t => t.IsSelected))
+            .ToList();
 
-        foreach (var item in selected)
+        if (sessionsToDelete.Count == 0) return;
+
+        foreach (var item in sessionsToDelete)
         {
             await _sessionRepository.DeleteSessionAsync(item.Id);
+            _loadedSessionCache.Remove(item.Id);
         }
 
         await LoadSessionsAsync();
@@ -216,9 +292,22 @@ public partial class HistoryViewModel : ViewModelBase
     [RelayCommand]
     private void SelectAllSessions()
     {
+        // Выбираем все активные/доступные тесты
+        bool currently3D = Sessions.SelectMany(s => s.Tests).Any(t => t.IsSelected && t.Is3D);
+
         foreach (var s in Sessions)
         {
-            s.IsSelected = true;
+            foreach (var t in s.Tests)
+            {
+                if (currently3D)
+                {
+                    if (t.Is3D && t.IsEnabled) t.IsSelected = true;
+                }
+                else
+                {
+                    if (!t.Is3D && t.IsEnabled) t.IsSelected = true;
+                }
+            }
         }
     }
 
@@ -227,7 +316,10 @@ public partial class HistoryViewModel : ViewModelBase
     {
         foreach (var s in Sessions)
         {
-            s.IsSelected = false;
+            foreach (var t in s.Tests)
+            {
+                t.IsSelected = false;
+            }
         }
     }
 }

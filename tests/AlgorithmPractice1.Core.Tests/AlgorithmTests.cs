@@ -114,6 +114,210 @@ public class AlgorithmTests
     
         Assert.Equal(24, ctx.StepCount); 
     }
+
+        // ============================================================
+        // ТЕСТЫ ДЛЯ ФИБОНАЧЧИ
+        // ============================================================
+
+        [Fact]
+        public void Fibonacci_ProducesCorrectValues()
+        {
+            var alg = new FibonacciAlgorithm();
+            var config = new ExperimentConfig();
+
+            // Эталонные значения: F(0)=0, F(1)=1, F(2)=1, F(3)=2, F(4)=3, F(5)=5, F(10)=55, F(15)=610, F(20)=6765
+            var expected = new Dictionary<int, long>
+            {
+                { 0, 0 },
+                { 1, 1 },
+                { 2, 1 },
+                { 3, 2 },
+                { 4, 3 },
+                { 5, 5 },
+                { 10, 55 },
+                { 15, 610 },
+                { 20, 6765 }
+            };
+
+            foreach (var kvp in expected)
+            {
+                var input = alg.GenerateTypedInput(kvp.Key, config);
+                long result = alg.ExecuteTyped(input, null);
+                Assert.Equal(kvp.Value, result);
+            }
+        }
+
+        [Fact]
+        public void FibonacciNaiveRecursive_ExponentialGrowth_StepsCountMatchesFormula()
+        {
+            // Для наивной рекурсии количество вызовов Fibonacci(n) = 2*F(n+1) - 1.
+            // Проверяем это на небольших n, чтобы убедиться, что сложность именно экспоненциальная.
+            var alg = new FibonacciNaiveRecursiveAlgorithm();
+            var config = new ExperimentConfig();
+
+            // n=5: 2*F(6)-1 = 2*8-1 = 15 вызовов
+            // n=6: 2*F(7)-1 = 2*13-1 = 25 вызовов
+            // n=7: 2*F(8)-1 = 2*21-1 = 41 вызов
+            // n=8: 2*F(9)-1 = 2*34-1 = 67 вызовов
+            var cases = new[]
+            {
+                (N: 5, ExpectedSteps: 15L),
+                (N: 6, ExpectedSteps: 25L),
+                (N: 7, ExpectedSteps: 41L),
+                (N: 8, ExpectedSteps: 67L)
+            };
+
+            foreach (var (n, expectedSteps) in cases)
+            {
+                var ctx = new MeasurementContext();
+                var input = alg.GenerateTypedInput(n, config);
+                alg.ExecuteTyped(input, ctx);
+
+                Assert.Equal(expectedSteps, ctx.StepCount);
+            }
+        }
+
+        [Fact]
+        public void Fibonacci_RegisteredInRegistry()
+        {
+            // Проверяем, что алгоритм автоматически подхватился через рефлексию/регистрацию
+            var alg = AlgorithmRegistry.Instance.GetById("Fibonacci");
+            Assert.NotNull(alg);
+            Assert.IsType<FibonacciAlgorithm>(alg);
+            Assert.Equal(ComplexityFunctionType.Linear, alg.TheoreticalComplexity);
+
+            var naiveAlg = AlgorithmRegistry.Instance.GetById("FibonacciNaiveRecursive");
+            Assert.NotNull(naiveAlg);
+            Assert.IsType<FibonacciNaiveRecursiveAlgorithm>(naiveAlg);
+            Assert.Equal(ComplexityFunctionType.Exponential, naiveAlg.TheoreticalComplexity);
+        }
+
+    [Fact]
+    public void Fibonacci_StepsCountEqualsN()
+    {
+        var alg = new FibonacciAlgorithm();
+        var ctx = new MeasurementContext();
+        int n = 10;                              // F(10) = 55
+
+        alg.ExecuteTyped(n, ctx);
+
+        // Итеративный вариант делает (n-1) шагов в цикле
+        Assert.Equal(9, ctx.StepCount);
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(10, 55)]
+    [InlineData(20, 6765)]
+    [InlineData(50, 12586269025)]
+    public void Fibonacci_ReturnsCorrectValue(int n, long expected)
+    {
+        var alg = new FibonacciAlgorithm();
+        long actual = alg.ExecuteTyped(n, null);
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(10, 55)]
+    [InlineData(20, 6765)]
+    public void FibonacciNaiveRecursive_ReturnsCorrectValue(int n, long expected)
+    {
+        var alg = new FibonacciNaiveRecursiveAlgorithm();
+        long actual = alg.ExecuteTyped(n, null);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void FibonacciNaiveRecursive_ExponentialStepCount()
+    {
+        var alg = new FibonacciNaiveRecursiveAlgorithm();
+        var ctx = new MeasurementContext();
+        
+        // Для n=10 количество вызовов функции должно быть 177 
+        // (это 2 * F(11) - 1, классическая формула для дерева вызовов)
+        alg.ExecuteTyped(10, ctx);
+        
+        Assert.Equal(177, ctx.StepCount); 
+    }
+    
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(10, 55)]
+    [InlineData(50, 12586269025)]
+    [InlineData(90, 2880067194370816120)] // Максимальное значение для long
+    public void FibonacciMemoized_ReturnsCorrectValue(int n, long expected)
+    {
+        var alg = new FibonacciMemoizedAlgorithm();
+        long actual = alg.ExecuteTyped(n, null);
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void FibonacciMemoized_LinearStepCount()
+    {
+        var alg = new FibonacciMemoizedAlgorithm();
+        var ctx = new MeasurementContext();
+        int n = 90;
+
+        alg.ExecuteTyped(n, ctx);
+
+        // Благодаря мемоизации мы вычисляем каждое число ровно один раз (плюс проверки кэша).
+        // Для n = 90 вычисляются все значения от 0 до 90 (ровно 91 шаг).
+        Assert.Equal(91, ctx.StepCount); 
+    }
+    
+    [Fact]
+    public void FibonacciMemoized_ExecutionIsFast()
+    {
+        var alg = new FibonacciMemoizedAlgorithm();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        alg.ExecuteTyped(90, null);
+
+        sw.Stop();
+        // Мемоизация на 90 элементах должна работать за миллисекунды
+        Assert.True(sw.ElapsedMilliseconds < 50);
+    }
+    
+    [Fact]
+    public void Fibonacci_MemoizedIsMuchFasterThanNaive()
+    {
+        var naive = new FibonacciNaiveRecursiveAlgorithm();
+        var memo = new FibonacciMemoizedAlgorithm();
+        int n = 30; // 30 - хороший баланс, наивный уже тормозит, но еще не зависает
+
+        // Замер наивного
+        var swNaive = System.Diagnostics.Stopwatch.StartNew();
+        naive.ExecuteTyped(n, null);
+        swNaive.Stop();
+
+        // Замер с мемоизацией
+        var swMemo = System.Diagnostics.Stopwatch.StartNew();
+        memo.ExecuteTyped(n, null);
+        swMemo.Stop();
+
+        // Наивный должен быть как минимум в 50 раз медленнее на n=30
+        Assert.True(swNaive.ElapsedMilliseconds > swMemo.ElapsedMilliseconds * 50,
+            $"Наивный: {swNaive.ElapsedMilliseconds} мс, Мемо: {swMemo.ElapsedMilliseconds} мс");
+    }
+    
+    [Fact]
+    public void Fibonacci_ExecutionIsFast()
+    {
+        var alg = new FibonacciAlgorithm();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        // Для линейного алгоритма F(90) должен выполняться мгновенно
+        alg.ExecuteTyped(90, null);
+
+        sw.Stop();
+        Assert.True(sw.ElapsedMilliseconds < 50,
+            $"Fibonacci(90) выполнялся {sw.ElapsedMilliseconds} мс, ожидалось < 50 мс");
+    }
     
     [Fact]
     public void LargeN_FastVectorAlgorithms_ExecuteQuicklyWithSmallStep()
@@ -343,5 +547,59 @@ public class AlgorithmTests
             Assert.Equal(n, res.GetLength(1));
             Assert.True(sw.ElapsedMilliseconds < 500);
         }
+    }
+
+    [Fact]
+    public void InductiveSubsets_CorrectSubsetsAndOrder()
+    {
+        var alg = new InductiveSubsetsAlgorithm();
+        int[] input = { 0, 1, 2, 3 };
+        var ctx = new MeasurementContext();
+
+        var subsets = alg.ExecuteTyped(input, ctx);
+
+        Assert.Equal(16, subsets.Count);
+        Assert.Equal(16, ctx.StepCount);
+
+        // Проверяем точный порядок индуктивной генерации:
+        // []
+        Assert.Equal(Array.Empty<int>(), subsets[0]);
+        // [0]
+        Assert.Equal(new[] { 0 }, subsets[1]);
+        // [1], [0, 1]
+        Assert.Equal(new[] { 1 }, subsets[2]);
+        Assert.Equal(new[] { 0, 1 }, subsets[3]);
+        // [2], [0, 2], [1, 2], [0, 1, 2]
+        Assert.Equal(new[] { 2 }, subsets[4]);
+        Assert.Equal(new[] { 0, 2 }, subsets[5]);
+        Assert.Equal(new[] { 1, 2 }, subsets[6]);
+        Assert.Equal(new[] { 0, 1, 2 }, subsets[7]);
+        // [3], [0, 3], [1, 3], [0, 1, 3], [2, 3], [0, 2, 3], [1, 2, 3], [0, 1, 2, 3]
+        Assert.Equal(new[] { 3 }, subsets[8]);
+        Assert.Equal(new[] { 0, 3 }, subsets[9]);
+        Assert.Equal(new[] { 1, 3 }, subsets[10]);
+        Assert.Equal(new[] { 0, 1, 3 }, subsets[11]);
+        Assert.Equal(new[] { 2, 3 }, subsets[12]);
+        Assert.Equal(new[] { 0, 2, 3 }, subsets[13]);
+        Assert.Equal(new[] { 1, 2, 3 }, subsets[14]);
+        Assert.Equal(new[] { 0, 1, 2, 3 }, subsets[15]);
+    }
+
+    [Fact]
+    public void InductiveSubsets_RegisteredInRegistryAndGeneratesSequentialInputs()
+    {
+        var alg = AlgorithmRegistry.Instance.GetById("InductiveSubsets");
+        Assert.NotNull(alg);
+        Assert.Equal(AlgorithmCategory.Individual, alg.Category);
+        Assert.Equal(ComplexityFunctionType.Exponential, alg.TheoreticalComplexity);
+
+        var typedAlg = Assert.IsType<InductiveSubsetsAlgorithm>(alg);
+        var input5 = typedAlg.GenerateTypedInput(5, typedAlg.DefaultConfig);
+        Assert.Equal(new[] { 0, 1, 2, 3, 4 }, input5);
+
+        var emptyInput = typedAlg.GenerateTypedInput(0, typedAlg.DefaultConfig);
+        var emptyRes = typedAlg.ExecuteTyped(emptyInput, null);
+        Assert.Single(emptyRes);
+        Assert.Empty(emptyRes[0]);
     }
 }
