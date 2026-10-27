@@ -1,4 +1,5 @@
 using AlgorithmPractice1.Core.Abstractions;
+using AlgorithmPractice1.Core.CallTree;
 using AlgorithmPractice1.Core.Models;
 using System.Collections.Generic;
 
@@ -17,6 +18,7 @@ public sealed class FibonacciMemoizedAlgorithm : AlgorithmBase<int, long>
     public override AlgorithmCategory Category => AlgorithmCategory.Individual;
     public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Linear;
+    public override bool IsRecursive => true;
 
     public override ExperimentConfig DefaultConfig => new()
     {
@@ -34,7 +36,7 @@ public sealed class FibonacciMemoizedAlgorithm : AlgorithmBase<int, long>
         return Fib(input, cache, context);
     }
 
-    private static long Fib(int n, Dictionary<int, long> cache, MeasurementContext? ctx)
+    private long Fib(int n, Dictionary<int, long> cache, MeasurementContext? ctx)
     {
         // Проверка кэша: если уже считали, возвращаем мгновенно
         if (cache.TryGetValue(n, out var cached))
@@ -43,7 +45,19 @@ public sealed class FibonacciMemoizedAlgorithm : AlgorithmBase<int, long>
         // Увеличиваем шаг только при реальном вычислении нового значения
         ctx?.IncrementSteps();
 
-        long result = n <= 1 ? n : Fib(n - 1, cache, ctx) + Fib(n - 2, cache, ctx);
+        long result;
+        if (n <= 1)
+        {
+            result = n;
+        }
+        else if (CallTreeTracker.IsTracking)
+        {
+            result = OutputCallTree(() => Fib(n - 1, cache, ctx)) + OutputCallTree(() => Fib(n - 2, cache, ctx));
+        }
+        else
+        {
+            result = Fib(n - 1, cache, ctx) + Fib(n - 2, cache, ctx);
+        }
         
         // Сохраняем в кэш
         cache[n] = result;

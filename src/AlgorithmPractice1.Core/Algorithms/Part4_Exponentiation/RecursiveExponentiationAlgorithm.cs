@@ -1,4 +1,5 @@
 using AlgorithmPractice1.Core.Abstractions;
+using AlgorithmPractice1.Core.CallTree;
 using AlgorithmPractice1.Core.Models;
 
 namespace AlgorithmPractice1.Core.Algorithms.Part4_Exponentiation;
@@ -17,6 +18,7 @@ public sealed class RecursiveExponentiationAlgorithm : AlgorithmBase<Exponentiat
     public override AlgorithmCategory Category => AlgorithmCategory.Exponentiation;
     public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Linear;
+    public override bool IsRecursive => true;
 
     public override ExperimentConfig DefaultConfig => new()
     {
@@ -34,7 +36,7 @@ public sealed class RecursiveExponentiationAlgorithm : AlgorithmBase<Exponentiat
 
     public override double ExecuteTyped(ExponentiationInput input, MeasurementContext? context)
     {
-        int iterations = context != null ? 1 : 2000;
+        int iterations = (context != null || CallTreeTracker.IsTracking) ? 1 : 2000;
         double result = 1.0;
         for (int iter = 0; iter < iterations; iter++)
         {
@@ -43,19 +45,24 @@ public sealed class RecursiveExponentiationAlgorithm : AlgorithmBase<Exponentiat
         return result;
     }
 
-    private static double PowerRecursive(double x, int n, MeasurementContext? context)
+    private double PowerRecursive(double x, int n, MeasurementContext? context)
     {
         if (n <= 0) return 1.0;
         if (n == 1) return x;
 
+        context?.IncrementSteps();
+
+        if (CallTreeTracker.IsTracking)
+        {
+            return x * OutputCallTree(() => PowerRecursive(x, n - 1, context));
+        }
+
         if (n > 1000)
         {
             int half = n / 2;
-            context?.IncrementSteps();
             return PowerRecursive(x, half, context) * PowerRecursive(x, n - half, context);
         }
 
-        context?.IncrementSteps();
         return x * PowerRecursive(x, n - 1, context);
     }
 }

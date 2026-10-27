@@ -1,5 +1,5 @@
-﻿using System.Numerics;
 using AlgorithmPractice1.Core.Abstractions;
+using AlgorithmPractice1.Core.CallTree;
 using AlgorithmPractice1.Core.Models;
 
 namespace AlgorithmPractice1.Core.Algorithms.Part3_Individual;
@@ -15,6 +15,7 @@ public sealed class PermutationsAlgorithm : AlgorithmBase<int[], long>
     public override AlgorithmCategory Category => AlgorithmCategory.Individual;
     public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Faсtorial;
+    public override bool IsRecursive => true;
     
     public override ExperimentConfig DefaultConfig => new()
     {
@@ -28,33 +29,49 @@ public sealed class PermutationsAlgorithm : AlgorithmBase<int[], long>
         var array = new int[n];
         for (int i = 0; i < n; i++)
         {
-            array[i] = i+1;
+            array[i] = i + 1;
         }
         return array;
     }
     
     public override long ExecuteTyped(int[] input, MeasurementContext? context)
     {
-        long count = 0;
-        Permute(input, 0, ref count, context);
-        return count;
+        if (input.Length == 0) return 0;
+        if (input.Length == 1)
+        {
+            context?.IncrementSteps();
+            return 1;
+        }
+
+        return Permute(input, 0, context);
     }
 
-    private void Permute(int[] input, int start, ref long count, MeasurementContext? context)
+    private long Permute(int[] input, int start, MeasurementContext? context)
     {
         if (start == input.Length - 1)
         {
-            count++;
             context?.IncrementSteps();
-            return;
+            return 1;
         }
-
+        
+        long count = 0;
         for (int i = start; i < input.Length; i++)
         {
             Swap(input, start, i);
-            Permute(input, start + 1, ref count, context);
+
+            if (CallTreeTracker.IsTracking)
+            {
+                count += OutputCallTree(() => Permute(input, start + 1, context));
+            }
+            else
+            {
+                count += Permute(input, start + 1, context);
+            }
+
             Swap(input, start, i);
         }
+
+        return count;
     }
     
     private static void Swap<T>(T[] a, int i, int j)

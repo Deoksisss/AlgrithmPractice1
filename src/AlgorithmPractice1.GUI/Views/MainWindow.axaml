@@ -31,6 +31,9 @@
             <TabItem Header="📈 Результаты и история">
                 <views:HistoryView DataContext="{Binding History}" />
             </TabItem>
+            <TabItem Header="🌲 Дерево рекурсивных вызовов">
+                <views:CallTreeView DataContext="{Binding CallTree}" />
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

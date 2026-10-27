@@ -14,6 +14,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public ExperimentSetupViewModel Setup { get; }
     public ExperimentProgressViewModel Progress { get; }
     public HistoryViewModel History { get; }
+    public CallTreeViewModel CallTree { get; }
 
     [ObservableProperty]
     private int _selectedTabIndex;
@@ -27,6 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Setup = new ExperimentSetupViewModel();
         Progress = new ExperimentProgressViewModel();
         History = new HistoryViewModel(sessionRepository);
+        CallTree = new CallTreeViewModel();
 
         Setup.StartExperimentRequested += OnStartExperiment;
         Progress.NavigateToResultsRequested += OnNavigateToResults;
@@ -64,6 +66,17 @@ public partial class MainWindowViewModel : ViewModelBase
                 {
                     batchVm.MarkCompleted();
                     await History.LoadSessionsAsync();
+
+                    var recursiveAlgs = requests
+                        .Where(r => r.Algorithm.IsRecursive)
+                        .Select(r => r.Algorithm)
+                        .Distinct()
+                        .ToList();
+
+                    if (recursiveAlgs.Count > 0)
+                    {
+                        CallTree.RegisterCompletedBatch(label ?? $"Пакет #{batchVm.BatchId}", recursiveAlgs);
+                    }
                 });
             }
             catch (Exception ex)

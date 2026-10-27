@@ -1,4 +1,5 @@
 using AlgorithmPractice1.Core.Abstractions;
+using AlgorithmPractice1.Core.CallTree;
 using AlgorithmPractice1.Core.Models;
 
 namespace AlgorithmPractice1.Core.Algorithms.Part4_Exponentiation;
@@ -17,6 +18,7 @@ public sealed class BinaryExponentiationAlgorithm : AlgorithmBase<Exponentiation
     public override AlgorithmCategory Category => AlgorithmCategory.Exponentiation;
     public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Logarithmic;
+    public override bool IsRecursive => true;
 
     public override ExperimentConfig DefaultConfig => new()
     {
@@ -34,7 +36,7 @@ public sealed class BinaryExponentiationAlgorithm : AlgorithmBase<Exponentiation
 
     public override double ExecuteTyped(ExponentiationInput input, MeasurementContext? context)
     {
-        int iterations = context != null ? 1 : 2000;
+        int iterations = (context != null || CallTreeTracker.IsTracking) ? 1 : 2000;
         double result = 1.0;
         for (int iter = 0; iter < iterations; iter++)
         {
@@ -43,21 +45,30 @@ public sealed class BinaryExponentiationAlgorithm : AlgorithmBase<Exponentiation
         return result;
     }
 
-    public static double PowerBinary(double x, long n, MeasurementContext? context)
+    public double PowerBinary(double x, long n, MeasurementContext? context)
     {
         if (n <= 0) return 1.0;
         if (n == 1) return x;
 
+        context?.IncrementSteps();
+
         if ((n & 1) == 1)
         {
-            context?.IncrementSteps();
+            if (CallTreeTracker.IsTracking)
+            {
+                return x * OutputCallTree(() => PowerBinary(x, n - 1, context));
+            }
             return x * PowerBinary(x, n - 1, context);
         }
         else
         {
-            context?.IncrementSteps();
-            double half = PowerBinary(x, n >> 1, context);
-            return half * half;
+            if (CallTreeTracker.IsTracking)
+            {
+                double half = OutputCallTree(() => PowerBinary(x, n >> 1, context));
+                return half * half;
+            }
+            double directHalf = PowerBinary(x, n >> 1, context);
+            return directHalf * directHalf;
         }
     }
 }
