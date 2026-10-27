@@ -35,10 +35,10 @@ public class CallTreeGraphControl : Control
         }
     }
 
-    private const double CardWidth = 190.0;
-    private const double CardHeight = 56.0;
-    private const double SiblingGap = 20.0;
-    private const double LevelGap = 65.0;
+    private const double CardWidth = 320.0;
+    private const double CardHeight = 94.0;
+    private const double SiblingGap = 28.0;
+    private const double LevelGap = 75.0;
 
     private double _zoomScale = 1.0;
     private Vector _panOffset = new(40, 40);
@@ -287,27 +287,28 @@ public class CallTreeGraphControl : Control
         var borderPen = new Pen(new SolidColorBrush(isRoot ? Color.Parse("#9333EA") : Color.Parse("#CBD5E1")), isRoot ? 2.0 : 1.2);
 
         // Карточка узла со скруглёнными углами
-        context.DrawRectangle(bgBrush, borderPen, new RoundedRect(rect, 6.0));
+        context.DrawRectangle(bgBrush, borderPen, new RoundedRect(rect, 8.0));
 
         // Верхняя декоративная полоска
         var headerRect = new Rect(layout.X, layout.Y, CardWidth, 4.0);
         var stripBrush = new SolidColorBrush(isRoot ? Color.Parse("#7E22CE") : Color.Parse("#A855F7"));
-        context.DrawRectangle(stripBrush, null, new RoundedRect(headerRect, 6.0, 6.0, 0, 0));
+        context.DrawRectangle(stripBrush, null, new RoundedRect(headerRect, 8.0, 8.0, 0, 0));
 
         var typeface = new Typeface(FontFamily.Default);
         var boldTypeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold);
+        var monoTypeface = new Typeface("Cascadia Code, Consolas, Courier New, monospace");
 
-        // Имя метода
+        // 1. Имя метода
         string title = $"{node.MethodName}()";
         var titleText = new FormattedText(
             title,
             CultureInfo.CurrentCulture,
             FlowDirection.LeftToRight,
             boldTypeface,
-            11,
+            12,
             new SolidColorBrush(Color.Parse("#0F172A"))
         );
-        context.DrawText(titleText, new Point(layout.X + 8, layout.Y + 8));
+        context.DrawText(titleText, new Point(layout.X + 10, layout.Y + 8));
 
         // Номер вызова в верхнем правом углу
         string callBadge = $"#{node.CallId}";
@@ -316,40 +317,64 @@ public class CallTreeGraphControl : Control
             CultureInfo.CurrentCulture,
             FlowDirection.LeftToRight,
             typeface,
-            9,
+            10,
             new SolidColorBrush(Color.Parse("#94A3B8"))
         );
-        context.DrawText(callBadgeText, new Point(layout.X + CardWidth - callBadgeText.Width - 8, layout.Y + 8));
+        context.DrawText(callBadgeText, new Point(layout.X + CardWidth - callBadgeText.Width - 10, layout.Y + 8));
 
-        // Аргументы вызова
-        string args = string.IsNullOrEmpty(node.ArgumentsSummary) ? "<без аргументов>" : node.ArgumentsSummary;
-        if (args.Length > 24) args = args.Substring(0, 22) + "...";
+        // 2. Аргументы вызова (каждый аргумент на отдельной строке)
+        double currentY = layout.Y + 28;
+        if (node.Arguments.Count == 0)
+        {
+            var noArgsText = new FormattedText(
+                "<без аргументов>",
+                CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                typeface,
+                11,
+                new SolidColorBrush(Color.Parse("#64748B"))
+            );
+            context.DrawText(noArgsText, new Point(layout.X + 10, currentY));
+            currentY += 18;
+        }
+        else
+        {
+            // Отрисовываем аргументы (до 2 строк: n и input)
+            int linesToDraw = Math.Min(node.Arguments.Count, 2);
+            for (int i = 0; i < linesToDraw; i++)
+            {
+                var arg = node.Arguments[i];
+                string argStr = $"{arg.Name} = {arg.Value}";
+                if (argStr.Length > 44) argStr = argStr.Substring(0, 41) + "...";
 
-        var argsText = new FormattedText(
-            args,
-            CultureInfo.CurrentCulture,
-            FlowDirection.LeftToRight,
-            typeface,
-            10,
-            new SolidColorBrush(Color.Parse("#475569"))
-        );
-        context.DrawText(argsText, new Point(layout.X + 8, layout.Y + 24));
+                var argText = new FormattedText(
+                    argStr,
+                    CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    monoTypeface,
+                    11,
+                    new SolidColorBrush(Color.Parse("#334155"))
+                );
+                context.DrawText(argText, new Point(layout.X + 10, currentY));
+                currentY += 18;
+            }
+        }
 
-        // Результат вызова (если есть)
+        // 3. Результат вызова (если есть)
         if (!string.IsNullOrEmpty(node.ReturnValueText))
         {
             string result = $"➔ {node.ReturnValueText}";
-            if (result.Length > 22) result = result.Substring(0, 20) + "...";
+            if (result.Length > 44) result = result.Substring(0, 41) + "...";
 
             var resText = new FormattedText(
                 result,
                 CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
                 boldTypeface,
-                10,
+                11,
                 new SolidColorBrush(Color.Parse("#16A34A"))
             );
-            context.DrawText(resText, new Point(layout.X + 8, layout.Y + 38));
+            context.DrawText(resText, new Point(layout.X + 10, layout.Y + CardHeight - 22));
         }
 
         foreach (var child in layout.Children)

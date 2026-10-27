@@ -114,7 +114,8 @@ public abstract class AlgorithmBase<TInput, TOutput> : IAlgorithm<TInput, TOutpu
 
         var rootArgs = new List<(string Name, object? Value)>
         {
-            ("n", n)
+            ("n", n),
+            ("input", input)
         };
         var rootNode = tracker.EnterCall(DisplayName, rootArgs);
 
@@ -197,8 +198,10 @@ public abstract class AlgorithmBase<TInput, TOutput> : IAlgorithm<TInput, TOutpu
 
             for (int i = 0; i < parameters.Length; i++)
             {
-                // Исключаем внутренний контекст измерений из визуального дерева
-                if (typeof(MeasurementContext).IsAssignableFrom(parameters[i].ParameterType))
+                // Исключаем внутренний контекст измерений и кэш мемоизации из визуального дерева
+                if (typeof(MeasurementContext).IsAssignableFrom(parameters[i].ParameterType) ||
+                    parameters[i].Name == "cache" ||
+                    typeof(System.Collections.IDictionary).IsAssignableFrom(parameters[i].ParameterType))
                     continue;
 
                 object? val = GetValueFromExpression(methodCall.Arguments[i]);
