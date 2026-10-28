@@ -19,9 +19,32 @@ public class CallTreeTests
         Assert.True(new BinaryExponentiationAlgorithm().IsRecursive);
         Assert.True(new QuickSortAlgorithm().IsRecursive);
         Assert.True(new InductiveSubsetsAlgorithm().IsRecursive);
+        Assert.True(new RTreeSearchAlgorithm().IsRecursive);
 
         Assert.False(new BubbleSortAlgorithm().IsRecursive);
         Assert.False(new FibonacciIterativeAlgorithm().IsRecursive);
+    }
+
+    [Fact]
+    public void RTreeSearch_BuildsCallTree_WithDepthGreaterThanTwo()
+    {
+        var alg = new RTreeSearchAlgorithm();
+        var root = alg.GenerateCallTree(15);
+
+        Assert.NotNull(root);
+        Assert.Equal(alg.DisplayName, root.MethodName);
+        Assert.NotEmpty(root.Children);
+
+        // Проверяем, что глубина рекурсии больше 2 (для N=15 высота R-дерева достигает 3-4 уровней)
+        int maxDepth = CalculateDepth(root);
+        Assert.True(maxDepth > 2, $"Ожидалась глубина вызова рекурсии > 2, но получена {maxDepth}");
+        Assert.True(root.SubtreeCount >= 4);
+    }
+
+    private static int CalculateDepth(CallTreeNode node)
+    {
+        if (node.Children.Count == 0) return node.Depth;
+        return node.Children.Max(CalculateDepth);
     }
 
     [Fact]
