@@ -20,6 +20,7 @@ public partial class CallTreeAlgorithmItemViewModel : ObservableObject
 
     public int SuggestedN => Algorithm.Id switch
     {
+        "HanoiTowers" => 3,
         "RTreeSearch" => 20,
         "InductiveSubsets" => 4,
         "Permutations" => 4,
@@ -33,6 +34,7 @@ public partial class CallTreeAlgorithmItemViewModel : ObservableObject
 
     public int MaxAllowedN => Algorithm.Id switch
     {
+        "HanoiTowers" => 7,         // 2^7 - 1 = 127 вызовов
         "RTreeSearch" => 100,
         "InductiveSubsets" => 10,   // 2^10 = 1024 вызовов/подмножеств
         "Permutations" => 6,        // 6! = 720 вызовов (безопасно для UI)

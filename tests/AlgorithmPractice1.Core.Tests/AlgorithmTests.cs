@@ -602,4 +602,45 @@ public class AlgorithmTests
         Assert.Single(emptyRes);
         Assert.Empty(emptyRes[0]);
     }
+
+    [Fact]
+    public void HanoiTowers_MovesCountEqualsTwoPowNMinusOne()
+    {
+        var alg = new HanoiTowersAlgorithm();
+
+        var cases = new (int N, long Expected)[]
+        {
+            (1, 1),
+            (2, 3),
+            (3, 7),
+            (4, 15),
+            (10, 1023)
+        };
+
+        foreach (var (n, expected) in cases)
+        {
+            var ctx = new MeasurementContext();
+            long moves = alg.ExecuteTyped(n, ctx);
+            Assert.Equal(expected, moves);
+            Assert.Equal(expected, ctx.StepCount);
+        }
+    }
+
+    [Fact]
+    public void HanoiTowers_RegisteredInRegistry()
+    {
+        var alg = AlgorithmRegistry.Instance.GetById("HanoiTowers");
+        Assert.NotNull(alg);
+        Assert.Equal(AlgorithmCategory.Individual, alg.Category);
+        Assert.Equal(ComplexityFunctionType.Exponential, alg.TheoreticalComplexity);
+        Assert.True(alg.IsRecursive);
+    }
+
+    [Fact]
+    public void RTreeSearch_TheoreticalComplexityIsLinearithmic()
+    {
+        var alg = AlgorithmRegistry.Instance.GetById("RTreeSearch");
+        Assert.NotNull(alg);
+        Assert.Equal(ComplexityFunctionType.Linearithmic, alg.TheoreticalComplexity);
+    }
 }

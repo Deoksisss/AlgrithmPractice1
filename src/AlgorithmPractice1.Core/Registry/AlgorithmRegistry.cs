@@ -42,6 +42,7 @@ public sealed class AlgorithmRegistry
         Register(new FibonacciMemoizedAlgorithm());
         Register(new FibonacciNaiveRecursiveAlgorithm());
         Register(new RTreeSearchAlgorithm());
+        Register(new HanoiTowersAlgorithm());
         
         Register(new IterativeExponentiationAlgorithm());
         Register(new RecursiveExponentiationAlgorithm());

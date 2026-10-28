@@ -19,7 +19,7 @@ public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
         "Рекурсивный обход узлов и отсечение поддеревьев, не пересекающих область запроса (O(log n)).";
     public override AlgorithmCategory Category => AlgorithmCategory.Individual;
     public override MeasurementType MeasurementType => MeasurementType.Time;
-    public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Logarithmic;
+    public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Linearithmic;
     public override bool IsRecursive => true;
 
     public override ExperimentConfig DefaultConfig => new()
