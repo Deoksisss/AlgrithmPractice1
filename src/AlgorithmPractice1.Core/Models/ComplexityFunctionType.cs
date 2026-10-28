@@ -94,4 +94,4 @@ public static class ComplexityFunctionExtensions
         ComplexityFunctionType.Exponential => "O(2^n)",
         _ => "O(n)"
     };
-}
+}   
