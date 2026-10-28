@@ -20,9 +20,25 @@ public class CallTreeTests
         Assert.True(new QuickSortAlgorithm().IsRecursive);
         Assert.True(new InductiveSubsetsAlgorithm().IsRecursive);
         Assert.True(new RTreeSearchAlgorithm().IsRecursive);
+        Assert.True(new HanoiTowersAlgorithm().IsRecursive);
 
         Assert.False(new BubbleSortAlgorithm().IsRecursive);
         Assert.False(new FibonacciIterativeAlgorithm().IsRecursive);
+    }
+
+    [Fact]
+    public void HanoiTowers_BuildsCallTree()
+    {
+        var alg = new HanoiTowersAlgorithm();
+        var root = alg.GenerateCallTree(3);
+
+        Assert.NotNull(root);
+        Assert.Equal(alg.DisplayName, root.MethodName);
+        Assert.NotEmpty(root.Children);
+
+        // Для n = 3: 2^3 - 1 = 7 перемещений, иерархическое бинарное дерево
+        Assert.Equal("7", root.ReturnValueText);
+        Assert.True(root.SubtreeCount >= 7);
     }
 
     [Fact]
