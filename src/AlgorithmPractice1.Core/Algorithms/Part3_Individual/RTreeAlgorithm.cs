@@ -4,15 +4,19 @@ using AlgorithmPractice1.Core.Models;
 
 namespace AlgorithmPractice1.Core.Algorithms.Part3_Individual;
 
+/// <summary>
+/// Алгоритм пространственного диапазонного поиска с использованием R-дерева (сложность O(log n)).
+/// </summary>
 public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
 {
-    private RTree? _prebuiltTree; 
+    private RTree? _prebuiltTree;
     private int _lastN = -1;
+
     public override string Id => "RTreeSearch";
     public override string DisplayName => "R-дерево (пространственный поиск)";
     public override string Description =>
-        "Рекурсивное построение R-дерева и поиск объектов в заданной области. " +
-        "Показывает преимущество пространственного индекса над полным перебором.";
+        "Иерархическое пространственное R-дерево (MBR). " +
+        "Рекурсивный обход узлов и отсечение поддеревьев, не пересекающих область запроса (O(log n)).";
     public override AlgorithmCategory Category => AlgorithmCategory.Individual;
     public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Logarithmic;
@@ -20,61 +24,72 @@ public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
 
     public override ExperimentConfig DefaultConfig => new()
     {
-        NMax = 10000,
-        NStep = 1000,
+        NMax = 5000,
+        NStep = 500,
         RunsPerN = 5
     };
 
     public override RTreeSearchInput GenerateTypedInput(int n, ExperimentConfig config)
     {
-        var rnd = new Random(42);
+        var rnd = new Random(42 + n);
         var points = new Point[n];
         for (int i = 0; i < n; i++)
-            points[i] = new Point(rnd.NextDouble() * 1000, rnd.NextDouble() * 1000);
+        {
+            points[i] = new Point(rnd.NextDouble() * 1000.0, rnd.NextDouble() * 1000.0);
+        }
 
-        // Искомая область — квадрат в центре
-        var query = new Rect(400, 400, 600, 600);
+        // Область поиска в центре плоскости
+        var query = new Rect(250.0, 250.0, 750.0, 750.0);
         return new RTreeSearchInput(points, query);
     }
 
     public override int ExecuteTyped(RTreeSearchInput input, MeasurementContext? context)
     {
-        // При трекинге дерева вызовов всегда создаем свежее дерево и замеряем поиск
+        // При трекинге дерева вызовов всегда создаём свежее дерево для текущего входа
         if (CallTreeTracker.IsTracking)
         {
             var tree = new RTree(this);
             foreach (var p in input.Points)
-                tree.Insert(p, null);
-
-            return tree.RangeQuery(input.Query, context).Count;
+            {
+                tree.Insert(p);
+            }
+            return tree.RangeQuery(input.Query, context);
         }
 
-        // Строим дерево только ОДИН раз для данного N (при первом замере)
+        // При регулярных замерах кэшируем дерево для одинакового N
         if (_prebuiltTree == null || input.Points.Length != _lastN)
         {
             _prebuiltTree = new RTree(this);
             foreach (var p in input.Points)
-                _prebuiltTree.Insert(p, null); // Передаем null, чтобы не считать шаги построения
-            
+            {
+                _prebuiltTree.Insert(p);
+            }
             _lastN = input.Points.Length;
         }
 
-        // Замеряем ТОЛЬКО поиск
-        return _prebuiltTree.RangeQuery(input.Query, context).Count;
+        return _prebuiltTree.RangeQuery(input.Query, context);
     }
 
-    internal void TrackCall(System.Linq.Expressions.Expression<Action> expr)
+    internal TResult TrackCallFunc<TResult>(System.Linq.Expressions.Expression<Func<TResult>> expr)
     {
-        OutputCallTree(expr);
+        return OutputCallTree(expr);
     }
 }
 
-// --- Вспомогательные типы ---
+// --- Модели данных R-дерева ---
 
-public record Point(double X, double Y);
+public record Point(double X, double Y)
+{
+    public override string ToString() => $"({X:F0}, {Y:F0})";
+}
+
 public record Rect(double MinX, double MinY, double MaxX, double MaxY)
 {
-    public double Area() => (MaxX - MinX) * (MaxY - MinY);
+    public double Area() => Math.Max(0.0, MaxX - MinX) * Math.Max(0.0, MaxY - MinY);
+
+    public bool Contains(Point p) =>
+        p.X >= MinX && p.X <= MaxX &&
+        p.Y >= MinY && p.Y <= MaxY;
 
     public bool Intersects(Rect other) =>
         MinX <= other.MaxX && MaxX >= other.MinX &&
@@ -85,107 +100,210 @@ public record Rect(double MinX, double MinY, double MaxX, double MaxY)
         Math.Max(MaxX, other.MaxX), Math.Max(MaxY, other.MaxY));
 
     public static Rect FromPoint(Point p) => new(p.X, p.Y, p.X, p.Y);
+
+    public override string ToString() => $"[{MinX:F0}..{MaxX:F0}, {MinY:F0}..{MaxY:F0}]";
 }
 
 public record RTreeSearchInput(Point[] Points, Rect Query);
 
-// --- Сам R-дерево (упрощённая версия) ---
+// --- Иерархическое R-дерево ---
 
 public class RTree
 {
-    private const int MaxEntries = 4;
+    public const int MaxEntries = 3;
     private readonly RTreeSearchAlgorithm _algorithm;
-    private readonly RNode _root = new(isLeaf: true);
+    private RNode _root = new(isLeaf: true);
+
+    public RNode Root => _root;
+
+    public int Height
+    {
+        get
+        {
+            int h = 1;
+            var curr = _root;
+            while (!curr.IsLeaf && curr.Children.Count > 0)
+            {
+                h++;
+                curr = curr.Children[0];
+            }
+            return h;
+        }
+    }
 
     public RTree(RTreeSearchAlgorithm algorithm)
     {
         _algorithm = algorithm;
     }
 
-    public void Insert(Point p, MeasurementContext? ctx)
+    public void Insert(Point p)
     {
-        InsertRecursive(_root, p, ctx);
+        var newSibling = InsertRecursive(_root, p);
+        if (newSibling != null)
+        {
+            var oldRoot = _root;
+            _root = new RNode(isLeaf: false);
+            _root.Children.Add(oldRoot);
+            _root.Children.Add(newSibling);
+            _root.Bounds = oldRoot.Bounds!.Union(newSibling.Bounds!);
+        }
     }
 
-    public void InsertRecursive(RNode node, Point p, MeasurementContext? ctx)
+    private RNode? InsertRecursive(RNode node, Point p)
     {
-        ctx?.IncrementSteps();
-
         if (node.IsLeaf)
         {
             node.Points.Add(p);
-            node.Bounds = node.Bounds is null ? Rect.FromPoint(p) : node.Bounds.Union(Rect.FromPoint(p));
-            if (node.Points.Count > MaxEntries) Split(node);
-            return;
+            node.Bounds = node.Bounds == null ? Rect.FromPoint(p) : node.Bounds.Union(Rect.FromPoint(p));
+
+            if (node.Points.Count > MaxEntries)
+            {
+                return SplitLeaf(node);
+            }
+            return null;
         }
 
-        // Выбираем дочерний узел с минимальным расширением
+        // Выбираем дочерний узел с минимальным расширением площади
         var target = node.Children
             .OrderBy(c => c.Bounds!.Union(Rect.FromPoint(p)).Area() - c.Bounds.Area())
+            .ThenBy(c => c.Bounds!.Area())
             .First();
 
-        if (CallTreeTracker.IsTracking)
-            _algorithm.TrackCall(() => InsertRecursive(target, p, ctx));
-        else
-            InsertRecursive(target, p, ctx);
+        var newSibling = InsertRecursive(target, p);
+        node.Bounds = CalculateBounds(node.Children);
 
-        node.Bounds = node.Bounds!.Union(target.Bounds!);
+        if (newSibling != null)
+        {
+            node.Children.Add(newSibling);
+            node.Bounds = node.Bounds.Union(newSibling.Bounds!);
+
+            if (node.Children.Count > MaxEntries)
+            {
+                return SplitInternal(node);
+            }
+        }
+
+        return null;
     }
 
-    public List<Point> RangeQuery(Rect query, MeasurementContext? ctx)
+    private static RNode SplitLeaf(RNode node)
     {
-        var result = new List<Point>();
-        if (CallTreeTracker.IsTracking)
-            _algorithm.TrackCall(() => QueryRecursive(_root, query, result, ctx));
-        else
-            QueryRecursive(_root, query, result, ctx);
-        return result;
+        var sibling = new RNode(isLeaf: true);
+        var points = node.Points.OrderBy(p => p.X).ToList();
+        int half = points.Count / 2;
+
+        node.Points.Clear();
+        node.Points.AddRange(points.Take(half));
+        node.Bounds = CalculatePointsBounds(node.Points);
+
+        sibling.Points.AddRange(points.Skip(half));
+        sibling.Bounds = CalculatePointsBounds(sibling.Points);
+
+        return sibling;
     }
 
-    public void QueryRecursive(RNode node, Rect query, List<Point> result, MeasurementContext? ctx)
+    private static RNode SplitInternal(RNode node)
+    {
+        var sibling = new RNode(isLeaf: false);
+        var children = node.Children.OrderBy(c => (c.Bounds!.MinX + c.Bounds.MaxX) / 2.0).ToList();
+        int half = children.Count / 2;
+
+        node.Children.Clear();
+        node.Children.AddRange(children.Take(half));
+        node.Bounds = CalculateBounds(node.Children);
+
+        sibling.Children.AddRange(children.Skip(half));
+        sibling.Bounds = CalculateBounds(sibling.Children);
+
+        return sibling;
+    }
+
+    private static Rect CalculateBounds(IEnumerable<RNode> nodes)
+    {
+        Rect? result = null;
+        foreach (var n in nodes)
+        {
+            if (n.Bounds != null)
+                result = result == null ? n.Bounds : result.Union(n.Bounds);
+        }
+        return result ?? new Rect(0, 0, 0, 0);
+    }
+
+    private static Rect CalculatePointsBounds(IEnumerable<Point> points)
+    {
+        Rect? result = null;
+        foreach (var p in points)
+        {
+            var r = Rect.FromPoint(p);
+            result = result == null ? r : result.Union(r);
+        }
+        return result ?? new Rect(0, 0, 0, 0);
+    }
+
+    public int RangeQuery(Rect query, MeasurementContext? ctx)
+    {
+        if (CallTreeTracker.IsTracking)
+        {
+            return _algorithm.TrackCallFunc(() => SearchNode(_root, query, ctx));
+        }
+        return SearchNode(_root, query, ctx);
+    }
+
+    public int SearchNode(RNode node, Rect query, MeasurementContext? ctx)
     {
         ctx?.IncrementSteps();
-        if (node.Bounds is null || !node.Bounds.Intersects(query)) return;
+
+        if (node.Bounds == null || !node.Bounds.Intersects(query))
+        {
+            return 0;
+        }
 
         if (node.IsLeaf)
         {
+            int found = 0;
             foreach (var p in node.Points)
-                if (query.MinX <= p.X && p.X <= query.MaxX &&
-                    query.MinY <= p.Y && p.Y <= query.MaxY)
-                    result.Add(p);
-            return;
+            {
+                if (query.Contains(p))
+                {
+                    found++;
+                }
+            }
+            return found;
         }
 
-        foreach (var c in node.Children)
+        int totalFound = 0;
+        foreach (var child in node.Children)
         {
-            if (CallTreeTracker.IsTracking)
-                _algorithm.TrackCall(() => QueryRecursive(c, query, result, ctx));
-            else
-                QueryRecursive(c, query, result, ctx);
+            if (child.Bounds != null && child.Bounds.Intersects(query))
+            {
+                if (CallTreeTracker.IsTracking)
+                {
+                    totalFound += _algorithm.TrackCallFunc(() => SearchNode(child, query, ctx));
+                }
+                else
+                {
+                    totalFound += SearchNode(child, query, ctx);
+                }
+            }
         }
-    }
 
-    private void Split(RNode node)
-    {
-        // Упрощённое разбиение: делим пополам
-        var half = node.Points.Count / 2;
-        var newNode = new RNode(isLeaf: true);
-        newNode.Points.AddRange(node.Points.Skip(half));
-        node.Points.RemoveRange(half, node.Points.Count - half);
-        newNode.Bounds = newNode.Points.Select(Rect.FromPoint).Aggregate((a, b) => a.Union(b));
-        node.Bounds = node.Points.Select(Rect.FromPoint).Aggregate((a, b) => a.Union(b));
+        return totalFound;
     }
 }
 
 public class RNode
 {
-    public bool IsLeaf { get; init; }
+    public bool IsLeaf { get; set; }
     public Rect? Bounds { get; set; }
     public List<Point> Points { get; } = new();
     public List<RNode> Children { get; } = new();
-    
+
     public RNode(bool isLeaf)
     {
         IsLeaf = isLeaf;
     }
+
+    public override string ToString() => IsLeaf
+        ? $"Лист({Points.Count} тчк, {Bounds})"
+        : $"Узел({Children.Count} ветв., {Bounds})";
 }
