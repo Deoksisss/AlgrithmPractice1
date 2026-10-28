@@ -277,6 +277,8 @@ public class RNode
     {
         IsLeaf = isLeaf;
     }
+    
+    
 
     public override string ToString() => IsLeaf
         ? $"Лист({Points.Count} тчк, {Bounds})"
