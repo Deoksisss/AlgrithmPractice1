@@ -1,4 +1,5 @@
 using AlgorithmPractice1.Core.Abstractions;
+using AlgorithmPractice1.Core.CallTree;
 using AlgorithmPractice1.Core.Models;
 
 namespace AlgorithmPractice1.Core.Algorithms.Part3_Individual;
@@ -15,6 +16,7 @@ public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
     public override AlgorithmCategory Category => AlgorithmCategory.Individual;
     public override MeasurementType MeasurementType => MeasurementType.Time;
     public override ComplexityFunctionType TheoreticalComplexity => ComplexityFunctionType.Logarithmic;
+    public override bool IsRecursive => true;
 
     public override ExperimentConfig DefaultConfig => new()
     {
@@ -37,10 +39,20 @@ public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
 
     public override int ExecuteTyped(RTreeSearchInput input, MeasurementContext? context)
     {
+        // При трекинге дерева вызовов всегда создаем свежее дерево и замеряем поиск
+        if (CallTreeTracker.IsTracking)
+        {
+            var tree = new RTree(this);
+            foreach (var p in input.Points)
+                tree.Insert(p, null);
+
+            return tree.RangeQuery(input.Query, context).Count;
+        }
+
         // Строим дерево только ОДИН раз для данного N (при первом замере)
         if (_prebuiltTree == null || input.Points.Length != _lastN)
         {
-            _prebuiltTree = new RTree();
+            _prebuiltTree = new RTree(this);
             foreach (var p in input.Points)
                 _prebuiltTree.Insert(p, null); // Передаем null, чтобы не считать шаги построения
             
@@ -50,6 +62,11 @@ public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
         // Замеряем ТОЛЬКО поиск
         return _prebuiltTree.RangeQuery(input.Query, context).Count;
     }
+
+    internal void TrackCall(System.Linq.Expressions.Expression<Action> expr)
+    {
+        OutputCallTree(expr);
+    }
 }
 
 // --- Вспомогательные типы ---
@@ -57,7 +74,6 @@ public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
 public record Point(double X, double Y);
 public record Rect(double MinX, double MinY, double MaxX, double MaxY)
 {
-    
     public double Area() => (MaxX - MinX) * (MaxY - MinY);
 
     public bool Intersects(Rect other) =>
@@ -78,14 +94,20 @@ public record RTreeSearchInput(Point[] Points, Rect Query);
 public class RTree
 {
     private const int MaxEntries = 4;
-    private RNode _root = new(isLeaf: true);
+    private readonly RTreeSearchAlgorithm _algorithm;
+    private readonly RNode _root = new(isLeaf: true);
+
+    public RTree(RTreeSearchAlgorithm algorithm)
+    {
+        _algorithm = algorithm;
+    }
 
     public void Insert(Point p, MeasurementContext? ctx)
     {
         InsertRecursive(_root, p, ctx);
     }
 
-    private void InsertRecursive(RNode node, Point p, MeasurementContext? ctx)
+    public void InsertRecursive(RNode node, Point p, MeasurementContext? ctx)
     {
         ctx?.IncrementSteps();
 
@@ -99,20 +121,28 @@ public class RTree
 
         // Выбираем дочерний узел с минимальным расширением
         var target = node.Children
-            .OrderBy(c => c.Bounds.Union(Rect.FromPoint(p)).Area() - c.Bounds.Area())
+            .OrderBy(c => c.Bounds!.Union(Rect.FromPoint(p)).Area() - c.Bounds.Area())
             .First();
-        InsertRecursive(target, p, ctx);
-        node.Bounds = node.Bounds.Union(target.Bounds);
+
+        if (CallTreeTracker.IsTracking)
+            _algorithm.TrackCall(() => InsertRecursive(target, p, ctx));
+        else
+            InsertRecursive(target, p, ctx);
+
+        node.Bounds = node.Bounds!.Union(target.Bounds!);
     }
 
     public List<Point> RangeQuery(Rect query, MeasurementContext? ctx)
     {
         var result = new List<Point>();
-        QueryRecursive(_root, query, result, ctx);
+        if (CallTreeTracker.IsTracking)
+            _algorithm.TrackCall(() => QueryRecursive(_root, query, result, ctx));
+        else
+            QueryRecursive(_root, query, result, ctx);
         return result;
     }
 
-    private void QueryRecursive(RNode node, Rect query, List<Point> result, MeasurementContext? ctx)
+    public void QueryRecursive(RNode node, Rect query, List<Point> result, MeasurementContext? ctx)
     {
         ctx?.IncrementSteps();
         if (node.Bounds is null || !node.Bounds.Intersects(query)) return;
@@ -127,20 +157,23 @@ public class RTree
         }
 
         foreach (var c in node.Children)
-            QueryRecursive(c, query, result, ctx);
+        {
+            if (CallTreeTracker.IsTracking)
+                _algorithm.TrackCall(() => QueryRecursive(c, query, result, ctx));
+            else
+                QueryRecursive(c, query, result, ctx);
+        }
     }
 
     private void Split(RNode node)
     {
         // Упрощённое разбиение: делим пополам
-        // В реальном R-дереве используется алгоритм Quadratic Split или R*-tree
         var half = node.Points.Count / 2;
         var newNode = new RNode(isLeaf: true);
         newNode.Points.AddRange(node.Points.Skip(half));
         node.Points.RemoveRange(half, node.Points.Count - half);
         newNode.Bounds = newNode.Points.Select(Rect.FromPoint).Aggregate((a, b) => a.Union(b));
         node.Bounds = node.Points.Select(Rect.FromPoint).Aggregate((a, b) => a.Union(b));
-        // В упрощённой версии не поднимаемся вверх — для замера времени достаточно
     }
 }
 

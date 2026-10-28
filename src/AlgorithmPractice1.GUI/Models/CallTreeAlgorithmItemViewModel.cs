@@ -20,6 +20,7 @@ public partial class CallTreeAlgorithmItemViewModel : ObservableObject
 
     public int SuggestedN => Algorithm.Id switch
     {
+        "RTreeSearch" => 20,
         "InductiveSubsets" => 4,
         "Permutations" => 4,
         "FibonacciNaiveRecursive" => 5,
@@ -32,6 +33,7 @@ public partial class CallTreeAlgorithmItemViewModel : ObservableObject
 
     public int MaxAllowedN => Algorithm.Id switch
     {
+        "RTreeSearch" => 100,
         "InductiveSubsets" => 10,   // 2^10 = 1024 вызовов/подмножеств
         "Permutations" => 6,        // 6! = 720 вызовов (безопасно для UI)
         "FibonacciNaiveRecursive" => 8, // 2*F(9)-1 = 67 вызовов
