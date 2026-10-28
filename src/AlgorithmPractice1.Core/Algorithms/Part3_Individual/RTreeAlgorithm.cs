@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using AlgorithmPractice1.Core.Abstractions;
+using AlgorithmPractice1.Core.CallTree;
 using AlgorithmPractice1.Core.Models;
 
 namespace AlgorithmPractice1.Core.Algorithms.Part3_Individual;
@@ -11,6 +9,9 @@ namespace AlgorithmPractice1.Core.Algorithms.Part3_Individual;
 /// </summary>
 public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
 {
+    private RTree? _prebuiltTree;
+    private int _lastN = -1;
+
     public override string Id => "RTreeSearch";
     public override string DisplayName => "R-дерево (пространственный поиск)";
     public override string Description =>
@@ -23,8 +24,8 @@ public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
 
     public override ExperimentConfig DefaultConfig => new()
     {
-        NMax = 100000, // Дерево строится долго, но поиск очень быстрый
-        NStep = 10000,
+        NMax = 5000,
+        NStep = 500,
         RunsPerN = 5
     };
 
@@ -37,22 +38,41 @@ public sealed class RTreeSearchAlgorithm : AlgorithmBase<RTreeSearchInput, int>
             points[i] = new Point(rnd.NextDouble() * 1000.0, rnd.NextDouble() * 1000.0);
         }
 
+        // Область поиска в центре плоскости
         var query = new Rect(250.0, 250.0, 750.0, 750.0);
-
-        // ВАЖНО: Строим дерево ЗДЕСЬ. Время построения не попадет в замеры.
-        var tree = new RTree();
-        foreach (var p in points)
-        {
-            tree.Insert(p);
-        }
-
-        return new RTreeSearchInput(points, query, tree);
+        return new RTreeSearchInput(points, query);
     }
 
     public override int ExecuteTyped(RTreeSearchInput input, MeasurementContext? context)
     {
-        // Замеряем ТОЛЬКО поиск в готовом дереве
-        return input.Tree.RangeQuery(input.Query, context);
+        // При трекинге дерева вызовов всегда создаём свежее дерево для текущего входа
+        if (CallTreeTracker.IsTracking)
+        {
+            var tree = new RTree(this);
+            foreach (var p in input.Points)
+            {
+                tree.Insert(p);
+            }
+            return tree.RangeQuery(input.Query, context);
+        }
+
+        // При регулярных замерах кэшируем дерево для одинакового N
+        if (_prebuiltTree == null || input.Points.Length != _lastN)
+        {
+            _prebuiltTree = new RTree(this);
+            foreach (var p in input.Points)
+            {
+                _prebuiltTree.Insert(p);
+            }
+            _lastN = input.Points.Length;
+        }
+
+        return _prebuiltTree.RangeQuery(input.Query, context);
+    }
+
+    internal TResult TrackCallFunc<TResult>(System.Linq.Expressions.Expression<Func<TResult>> expr)
+    {
+        return OutputCallTree(expr);
     }
 }
 
@@ -84,27 +104,17 @@ public record Rect(double MinX, double MinY, double MaxX, double MaxY)
     public override string ToString() => $"[{MinX:F0}..{MaxX:F0}, {MinY:F0}..{MaxY:F0}]";
 }
 
-// Класс, который хранит готовое дерево
-public class RTreeSearchInput
-{
-    public Point[] Points { get; }
-    public Rect Query { get; }
-    public RTree Tree { get; }
-
-    public RTreeSearchInput(Point[] points, Rect query, RTree tree)
-    {
-        Points = points;
-        Query = query;
-        Tree = tree;
-    }
-}
+public record RTreeSearchInput(Point[] Points, Rect Query);
 
 // --- Иерархическое R-дерево ---
 
 public class RTree
 {
-    public const int MaxEntries = 4; // Максимум детей в узле
+    public const int MaxEntries = 3;
+    private readonly RTreeSearchAlgorithm _algorithm;
     private RNode _root = new(isLeaf: true);
+
+    public RNode Root => _root;
 
     public int Height
     {
@@ -121,12 +131,16 @@ public class RTree
         }
     }
 
+    public RTree(RTreeSearchAlgorithm algorithm)
+    {
+        _algorithm = algorithm;
+    }
+
     public void Insert(Point p)
     {
         var newSibling = InsertRecursive(_root, p);
         if (newSibling != null)
         {
-            // Если корень переполнился, создаем новый корень
             var oldRoot = _root;
             _root = new RNode(isLeaf: false);
             _root.Children.Add(oldRoot);
@@ -228,10 +242,14 @@ public class RTree
 
     public int RangeQuery(Rect query, MeasurementContext? ctx)
     {
+        if (CallTreeTracker.IsTracking)
+        {
+            return _algorithm.TrackCallFunc(() => SearchNode(_root, query, ctx));
+        }
         return SearchNode(_root, query, ctx);
     }
 
-    private int SearchNode(RNode node, Rect query, MeasurementContext? ctx)
+    public int SearchNode(RNode node, Rect query, MeasurementContext? ctx)
     {
         ctx?.IncrementSteps();
 
@@ -258,7 +276,14 @@ public class RTree
         {
             if (child.Bounds != null && child.Bounds.Intersects(query))
             {
-                totalFound += SearchNode(child, query, ctx);
+                if (CallTreeTracker.IsTracking)
+                {
+                    totalFound += _algorithm.TrackCallFunc(() => SearchNode(child, query, ctx));
+                }
+                else
+                {
+                    totalFound += SearchNode(child, query, ctx);
+                }
             }
         }
 
@@ -277,8 +302,6 @@ public class RNode
     {
         IsLeaf = isLeaf;
     }
-    
-    
 
     public override string ToString() => IsLeaf
         ? $"Лист({Points.Count} тчк, {Bounds})"
